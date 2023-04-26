@@ -78,6 +78,7 @@ check_for_updates()
 
 def prompt_user_for_config():
     global debug_code
+    global api_key
     api_key = input("Please enter your API key: ")
     google_api_key = input("Please enter your Google API key: ")
     google_search_id = input("Please enter your Google Search ID: ")
@@ -152,7 +153,7 @@ else:
 
 # region ### FUNCTIONS ###
 max_conversation = int(os.environ.get('MAX_CONVERSATION', 6))
-max_characters = int(os.environ.get('MAX_CHARACTERS', 10))
+max_characters = int(os.environ.get('MAX_CHARACTERS', 2000))
 
 def alternate_api(number):
     global api_count
