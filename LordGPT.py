@@ -32,7 +32,7 @@ if not os.path.exists(working_folder):
 
 # region ### GLOBAL FUNCTIONS ###
 config_file = "config.json"
-current_version = "1.0.0"
+current_version = "1.1.0"
 update_url = "https://thelordg.com/version.txt"
 download_link = "https://github.com/Cytranics/LordGPT"
 
