@@ -7,6 +7,8 @@ import random
 import json
 import subprocess
 import datetime
+import ssl
+import random
 import requests.exceptions
 from time import sleep
 from typing import Dict
@@ -18,6 +20,7 @@ from fake_useragent import UserAgent
 from unidecode import unidecode
 import pdfkit
 import requests
+import urllib.request
 
 from scripts.bot_prompts import command_list, bot_prompt
 from scripts.bot_commands import botcommands
@@ -95,11 +98,6 @@ def check_for_updates():
 
 
 check_for_updates()
-
-
-import os
-import sys
-import json
 
 def prompt_user_for_config():
 
@@ -183,6 +181,10 @@ else:
     api_timeout = int(os.environ.get("API_TIMEOUT", 90))
     google_api_key = os.environ["GOOGLE_API_KEY"]
     google_search_id = os.environ["CUSTOM_SEARCH_ENGINE_ID"]
+    bd_enabled = os.getenv("BD_ENABLED", "False") == "True"
+    bd_username = os.getenv("BD_USERNAME")
+    bd_password = os.getenv("BD_PASSWORD")
+    bd_port = int(os.getenv("BD_PORT", 22225))
 #endregion
 
 
@@ -295,7 +297,7 @@ def get_random_user_agent():
 # region ### API QUERY ###
 
 
-def query_bot(messages, retries=20):
+def query_bot(messages, retries=api_retry):
     alternate_api(api_count)    
     time.sleep(api_throttle)
     
@@ -318,15 +320,37 @@ def query_bot(messages, retries=20):
                 "Content-Type": "application/json",
                 "Authorization": f"Bearer {api_key}",
             }
+            
+            # BRIGHT DATA PROXY
+            if bd_enabled:
+                
+                json_utf8 = json_payload.encode('utf-8')
+                session_id = random.random()
+                super_proxy_url = ('http://%s-session-%s:%s@zproxy.lum-superproxy.io:%d' %
+                               (bd_username, session_id, bd_password, bd_port))
+                proxy_handler = urllib.request.ProxyHandler({
+                    'http': super_proxy_url,
+                    'https': super_proxy_url,
+            })
+                ssl._create_default_https_context = ssl._create_unverified_context
+                opener = urllib.request.build_opener(proxy_handler)
+                req = urllib.request.Request(
+                    api_url, data=json_utf8, headers=headers)  # type: ignore
 
-            botresponse = requests.request(
-                "POST", api_url, headers=headers, data=json_payload, timeout=api_timeout
-            )
-            debug_log(f"Returned Response from OpenAI: {botresponse.status_code}")
+                #BRIGHT DATA REQUEST                
+                request = opener.open(req, timeout=api_timeout)
+                uresponse = request.read()
+                utfresponse = uresponse.decode('utf-8')
+                botresponse = json.loads(utfresponse)
+                response_json = botresponse
+            else:
+                #STANDARD API REQUEST
+                botresponse = requests.request("POST", api_url, headers=headers, data=json_payload, timeout=api_timeout)
+                response_json = botresponse.json()
             debug_log(botresponse)
             
             # Handling error response
-            response_json = botresponse.json()
+            
             if "error" in response_json:
                 error_message = response_json["error"]["message"]
                 print(f"Error: {error_message}")
@@ -365,11 +389,12 @@ def query_bot(messages, retries=20):
                     )
         except Exception as e:
             if attempt < retries - 1:
-                print("API Exception...Retrying...")
+                print(f"API Exception: {str(e)}...Retrying...")
                 alternate_api(api_count)
                 time.sleep(2**attempt)
             else:
                 raise e
+        
 
 
 # endregion
