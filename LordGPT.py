@@ -44,6 +44,10 @@ max_conversation = 6
 max_characters = 3000
 debug_code = False
 
+def debug_log(message):
+    if debug_code:
+        print(message)
+
 def set_global_success(value):
     global success
     success = value
@@ -66,6 +70,7 @@ check_for_updates()
 
 # region ### PYINSTALLER CODE ###
 def prompt_user_for_config():
+    global debug_code
     api_key = input("Please enter your API key: ")
     google_api_key = input("Please enter your Google API key: ")
     google_search_id = input("Please enter your Google Search ID: ")
@@ -155,9 +160,7 @@ else:
 # region ### FUNCTIONS ###
 
 # Debugging function
-def debug_log(message):
-    if debug_code:
-        print(message)
+
 
 # Alternate API calls between Azure and OpenAI
 
