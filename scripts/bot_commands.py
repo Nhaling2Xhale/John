@@ -8,7 +8,7 @@ botcommands = [
     {
         "command_string": "download_file",
         "command_argument": "url",
-        "command_description": "Download file's from from a url."
+        "command_description": "Download file's from from a url using curl."
     },
     {
         "command_string": "create_pdf_from_html_markup",
@@ -17,8 +17,8 @@ botcommands = [
     },
     {
         "command_string": "create_python_script",
-        "command_argument": "Filename: [FILENAME] Content: ```[CONTENT]```",
-        "command_description": "Write and save a non-interactive formatted script as a multiline string using triple backticks (```) and new lines. Replace '[FILENAME]' with the desired filename and '[SCRIPT]' with the valid inner python script."
+        "command_argument": "Filename: [FILENAME] Content: ```[SCRIPT]```",
+        "command_description": "Write and save a non-interactive formatted python script as a multiline string using triple backticks (```) and new lines. Replace '[FILENAME]' with filename.py and '[SCRIPT]' with the valid inner python script."
     },
     {
         "command_string": "write_new_content_to_file",

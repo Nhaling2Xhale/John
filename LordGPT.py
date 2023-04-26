@@ -41,8 +41,9 @@ global api_timeout
 # region ### GLOBAL FUNCTIONS ###
 model = None
 config_file = "config.json"
-current_version = "1.1.1"
-update_url = "https://thelordg.com/version.txt"
+current_version = "1.1.4"
+update_url = "https://thelordg.com/downloads/version.txt"
+changelog_url = "https://thelordg.com/downloads/changelog.txt"
 download_link = "https://github.com/Cytranics/LordGPT"
 success = True
 api_count = 0
@@ -78,8 +79,19 @@ def check_for_updates():
         if latest_version != current_version:
             print(colored(
                 f"A new version ({latest_version}) is available! Please visit {download_link} to download the update. Check the README.md for changes.", "red"))
+
+            # Fetch the changelog
+            changelog_response = requests.get(changelog_url)
+            changelog_response.raise_for_status()
+            changelog = changelog_response.text.strip()
+
+            # Display the changelog
+            print(colored("Changelog:", "yellow"))
+            print(changelog)
+
     except requests.exceptions.RequestException as e:
         print("Error checking for updates:", e)
+
 
 
 check_for_updates()
@@ -175,8 +187,8 @@ else:
 
 
 # region ### FUNCTIONS ###
-max_conversation = int(os.environ.get('MAX_CONVERSATION', 6))
-max_characters = int(os.environ.get('MAX_CHARACTERS', 2000))
+max_conversation = int(os.environ.get('MAX_CONVERSATION', 5))
+max_characters = int(os.environ.get('MAX_CHARACTERS', 1000))
 api_count = 0
 def alternate_api(number):
     global api_count
@@ -318,6 +330,7 @@ def query_bot(messages, retries=20):
             if "error" in response_json:
                 error_message = response_json["error"]["message"]
                 print(f"Error: {error_message}")
+                print("max_tokens is too high.....GPT3.5 is limited, so change max_tokens to a lower value.")
                 continue
         
 
@@ -948,7 +961,7 @@ def download_file(response, command_string, command_argument, current_task, sugg
     try:
         filename = command_argument.split("/")[-1]
         output_path = os.path.join(working_folder, filename)
-        command_list = ["wget", "-O", output_path, command_argument]
+        command_list = ["curl", "-o", output_path, command_argument]
 
         process = subprocess.run(
             command_list,
@@ -985,6 +998,7 @@ def download_file(response, command_string, command_argument, current_task, sugg
             suggested_next_task,
             
         )
+
 #endregion        
 
 # region ### SEARCH GOOGLE ###
@@ -1328,7 +1342,7 @@ def main_loop():
         print(colored("Goal: " + user_goal, "green"))
     set_global_success(True)
 
-    bot_send = openai_bot_handler(bot_prompt + user_goal, f"""{{"response_120_words": "Respond with your detailed task list", "command_string": "[COMMAND]", "command_argument": "[ARGUMENT]", "current_task": "[CURRENT TASK]", "suggested_next_task": "[SUGGESTED NEXT TASK]"}}""" + user_goal, "assistant")
+    bot_send = openai_bot_handler(bot_prompt + user_goal, f"""{{"response_120_words": "Respond with your detailed task list using using the required json format", "command_string": "[COMMAND]", "command_argument": "[ARGUMENT]", "current_task": "[CURRENT TASK]", "suggested_next_task": "[SUGGESTED NEXT TASK]"}}""" + user_goal, "assistant")
 
     while True:
         num_input = input(
