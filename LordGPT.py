@@ -40,8 +40,6 @@ success = True
 api_count = 0
 api_type = None
 message_history = []
-max_conversation = 6
-max_characters = 3000
 debug_code = False
 
 def debug_log(message):
@@ -147,7 +145,7 @@ else:
     presence_penalty = float(os.getenv("PRESENCE_PENALTY", "0.0"))
     top_p = float(os.getenv("TOP_P", "1.0"))
     local_memory_file = os.getenv("LOCAL_MEMORY_FILE", "memory.json")
-    debug_code = bool(os.getenv("DEBUG_CODE", "False"))
+    debug_code = os.getenv("DEBUG_CODE", "False") == "True"
     api_throttle = int(os.environ.get("API_THROTTLE", 10))
     api_retry = int(os.environ.get("API_RETRY", 10))
     api_timeout = int(os.environ.get("API_TIMEOUT", 90))
@@ -158,13 +156,8 @@ else:
 #endregion
 
 # region ### FUNCTIONS ###
-
-# Debugging function
-
-
-# Alternate API calls between Azure and OpenAI
-
-# API settings, set throttle lower if using alternate to speed up API calls
+max_conversation = int(os.environ.get('MAX_CONVERSATION', 6))
+max_characters = int(os.environ.get('MAX_CHARACTERS', 10))
 
 def alternate_api(number):
     global api_count
@@ -691,7 +684,7 @@ def create_python_script(
         content = None
 
         # Extract filename and content using regex
-        regex_pattern = r'Filename:\s*(\S+)\s+Content:\s*"""(.*?)"""'
+        regex_pattern = r'Filename:\s*(\S+)\s+Content:\s*```(.*?)```'
         match = re.search(regex_pattern, command_argument, re.DOTALL)
 
         if match:
@@ -717,7 +710,7 @@ def create_python_script(
         set_global_success(True)
 
         return create_json_message(
-            f"Python code created and saved successfully:\nFilename: {filename}\nContent:\n```\n{content}\n```",
+            f"Python code created and saved successfully:\nFilename: {filename}\nContent:\n```python\n{content}\n```",
             command_string,
             command_argument,
             current_task,
@@ -739,6 +732,7 @@ def create_python_script(
 
 
 
+
 # endregion
 
 # region ### WRITE NEW CONTENT TO FILE ###
@@ -752,7 +746,7 @@ def write_new_content_to_file(
         content = None
 
         # Extract filename and content using regex
-        regex_pattern = r'Filename:\s*(\S+)\s+Content:\s*"""(.*?)"""'
+        regex_pattern = r'Filename:\s*(\S+)\s+Content:\s*```(.*?)```'
         match = re.search(regex_pattern, command_argument, re.DOTALL)
         os.makedirs(working_folder, exist_ok=True)
         if match:
@@ -810,7 +804,7 @@ def append_content_to_existing_file(
 ):
     try:
         # Extract filename and content using regex
-        regex_pattern = r'Filename:\s*(\S+)\s+Content:\s*"""(.*?)"""'
+        regex_pattern = r'Filename:\s*(\S+)\s+Content:\s*```(.*?)```'
         match = re.search(regex_pattern, command_argument, re.DOTALL)
 
         if match:
@@ -931,7 +925,7 @@ def read_content_from_file(
 
 # endregion
 
-#region ## DOWNLOAD FILES ###
+#region ### DOWNLOAD FILES ###
 def download_file(response, command_string, command_argument, current_task, next_task, goal_status):
     if not os.path.exists(working_folder):
         os.makedirs(working_folder)
@@ -976,8 +970,7 @@ def download_file(response, command_string, command_argument, current_task, next
             next_task,
             goal_status,
         )
-        
-#regionend
+#endregion        
 
 # region ### SEARCH GOOGLE ###
 
