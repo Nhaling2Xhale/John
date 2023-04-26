@@ -931,6 +931,54 @@ def read_content_from_file(
 
 # endregion
 
+#region ## DOWNLOAD FILES ###
+def download_file(command_argument):
+    if not os.path.exists(working_folder):
+        os.makedirs(working_folder)
+
+    try:
+        filename = command_argument.split("/")[-1]
+        output_path = os.path.join(working_folder, filename)
+        command_list = ["wget", "-O", output_path, command_argument]
+
+        process = subprocess.run(
+            command_list,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=True,
+        )
+
+        if process.returncode == 0:
+            return create_json_message(
+            "File downloaded successfully and saved to local folder",
+            command_string,
+            command_argument,
+            current_task,
+            next_task,
+            goal_status,
+        )
+        else:
+            return create_json_message(
+            "Error downloading file",
+            command_string,
+            command_argument,
+            current_task,
+            next_task,
+            goal_status,
+        )
+
+    except subprocess.CalledProcessError as e:
+        return create_json_message(
+            f"Error: {e}",
+            command_string,
+            command_argument,
+            current_task,
+            next_task,
+            goal_status,
+        )
+        
+#regionend
+
 # region ### SEARCH GOOGLE ###
 
 
@@ -1199,7 +1247,7 @@ def openai_bot_handler(current_prompt, message, role):
     typing_print(str(next_task) + "")
     print(colored("Executing Command: ", color="red"), end="")
     typing_print(str(command_string))
-    print(colored("Command Argument: ", color="red"), end="")
+    print(colored("Command Argument: ", color="red"), end="\n")
     typing_print(str(command_argument) + "\n\n")
 
     handler_response = command_handler(

@@ -10,6 +10,11 @@ botcommands = [
         "command_description": "Used when you do not need to use a command"
     },
     {
+        "command_string": "download_file",
+        "command_argument": "url",
+        "command_description": "Used to download a file from a URL. Replace 'url' with the single web address"
+    },
+    {
         "command_string": "create_pdf_from_html_markup",
         "command_argument": "Filename: [FILENAME] Content: [CONTENT]",
         "command_description": "Create PDF's by sending formatted HTML as the content along with any research data."
@@ -36,13 +41,13 @@ botcommands = [
     },
     {
         "command_string": "search_google",
-        "command_argument": "Query 7 Words Long|pagenumber",
-        "command_description": "Creates a list of url's and snippets by passing a query and page number. Pass the arugment as query|pagenum Example: Query|2"
+        "command_argument": "[DETAILED QUERY]|[PAGENUMBER]",
+        "command_description": "Creates a list of url's and snippets by passing a query and page number."
     },
     {
         "command_string": "scrape_website_url",
         "command_argument": "https://url|raw_html|max_length=#",
-        "command_description": "Used to scrape the contents of a URL with http or https. Replace 'url' with the single web address, add the raw_html option to gather the HTML markup and pass max_character to return the amount of characters you need. Example: https://example.com|raw_html|max_length=500"
+        "command_description": "Used to scrape the contents of a website with http or https. Use wget cmd for file ext. Example: https://example.com|raw_html|max_length=500"
     },
     {
         "command_string": "save_research",
