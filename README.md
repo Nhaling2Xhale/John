@@ -2,9 +2,18 @@
 Autonomous AI Assistant fully capable of performing tasks on its own.
 JOIN US ON DISCORD: https://discord.gg/mhGtn6fb
 
-UPDATE 4/25/2023 - Windows Binary
-- Windows Binary for non tech people, packaged with pyinstaller
-- Instructions here: https://1drv.ms/w/s!AudyeVtUbcqvkO1QNLBNAlGijETAiw?e=thWIGj
+UPDATE: 4/26/2023
+- Major Update:
+- Reworked Prompt. I think its great, you be the judge.
+- Fixed issue with invalid characters in Browse Web.
+- New prompt fixes alot of issues with things.
+- Debug flag now writes to the working folder as debug.txt.
+- Reduced default max_token to 800
+- Changed Json format, removed Goal % so he isnt forced to complete a goal. He was using it to skip things.
+- Research is now saved to the working folder.
+- Fixed message history
+- The Lord now will complete task items and mark them complete.
+- Throwback for the old school BBSers like me.
 
 
 WELCOME LordGPT is an automated AI Assistant that can accomplish a wide range of tasks.
@@ -58,14 +67,38 @@ MAC USERS
 3. export PATH="/usr/local/opt/python/libexec/bin:$PATH"
 4. brew install python
 5. pip3 install -r requirements.txt
-6. pip3 install requests
-7. pip3 install termcolor
-8. pip3 install beautifulsoup4
-9. pip3 install PyPDF2
-10. pip3 install jsmin
-11. pip3 install fake-useragent
-12. pip3 install pdfkit
-13. pip3 install tiktoken
 14. Now setup your .env
 
+ENV SETUP
+Windows Binary Instructions - https://thelordg.com/downloads/LordGPT.exe 
+
+The Windows Binary is a prepacked Python bundle using PyInstaller. It's built with the latest version and includes everything you need to access LordGPT. The bundle still requires that you have an OpenAI and Google Search key. 
+
+OpenAI API:
+- Sign up for OpenAI; the first $15 is free: https://platform.openai.com/account/api-keys 
+- Once logged in, click your profile in the upper right. 
+- Choose "API Keys." 
+- Generate an API key and save it somewhere; you won't be able to see it again.
+
+GOOGLE API: 
+
+- Sign up for a Gmail account if you don’t already have one. 
+- Visit https://cloud.google.com/. 
+- Go to "API & Services" and choose "Credentials." 
+- Choose "Create Credentials" at the top and select "API key." 
+- Save the API in Notepad, along with the OpenAI key. 
+- Now visit the left menu again, select "API & Services," and choose "Enabled API & Services." 
+- At the top of the page, select "+Enable API and Services." 
+- In the search type "Custom Search." 
+- Enable the API and choose "Manage." 
+- Now visit Programmable Search - All search engines (google.com). 
+- Click "Add" and give your search engine a name and select "Entire web," then click "Create."
+- Now copy the code after "cse.js." Example: "ccse.js?cx=e14a5ff417c4b26" 
+- Paste that into Notepad. 
+
+LAUNCH LordGPT.exe: 
+
+- Double-click on LordGPT.exe. 
+- Paste the keys when asked. 
+- Choose "GPT-3.5-Turbo" unless you have GPT-4. Note: You’ll get errors if you try GPT-4 without access. 
 

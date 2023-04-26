@@ -1,38 +1,34 @@
 botcommands = [
     {
         "command_string": "create_task_list",
-        "command_argument": "[CONTENT]",
-        "command_description": "Your first command should be to create the task list. Replace '[CONTENT]' with the string content."
+        "command_argument": "[TASKLIST]",
+        "command_description": "Replace [TASKLIST] with your detailed numbered task list containg subtasks to acheive the goal."
     },
-    {
-        "command_string": "no_command",
-        "command_argument": "None",
-        "command_description": "Used when you do not need to use a command"
-    },
+
     {
         "command_string": "download_file",
         "command_argument": "url",
-        "command_description": "Used to download a file or PDF other than html from a URL. Replace 'url' with the url and filename"
+        "command_description": "Download file's from from a url."
     },
     {
         "command_string": "create_pdf_from_html_markup",
         "command_argument": "Filename: [FILENAME] Content: [CONTENT]",
-        "command_description": "Create PDF's by sending formatted HTML as the content along with any research data."
+        "command_description": "Create PDF's by replacing [CONTENT] with formatted HTML."
     },
     {
         "command_string": "create_python_script",
-        "command_argument": "Filename: [FILENAME] Content: [CONTENT]",
-        "command_description": "Write and save a formatted python script that does not require an API key to execute. Replace '[FILENAME]' with the desired filename and '[CONTENT]' with the formatted python script as a multiline string using triple backticks (```)."
+        "command_argument": "Filename: [FILENAME] Content: ```[CONTENT]```",
+        "command_description": "Write and save a non-interactive formatted script as a multiline string using triple backticks (```) and new lines. Replace '[FILENAME]' with the desired filename and '[SCRIPT]' with the valid inner python script."
     },
     {
         "command_string": "write_new_content_to_file",
-        "command_argument": "Filename: [FILENAME] Content: [CONTENT]",
-        "command_description": "Write and save formatted text content to a single file. Replace '[FILENAME]' with the desired filename and '[CONTENT]' with the content sent as a multiline string using triple backticks (```)."
+        "command_argument": "Filename: [FILENAME] Content: ```[CONTENT]```",
+        "command_description": "Write and save formatted text content to a single file as a multiline string using triple backticks (```). Replace '[FILENAME]' with the desired filename and '[CONTENT]'"
     },
     {
         "command_string": "append_content_to_existing_file",
-        "command_argument": "Filename: [FILENAME] Content: [CONTENT]",
-        "command_description": "Append formatted content or formatted code to an existing file. Replace '[FILENAME]' with the desired filename and '[CONTENT]' with the file content sent as a multiline string using triple backticks (```)."
+        "command_argument": "Filename: [FILENAME] Content: ```[CONTENT]```",
+        "command_description": "Append formatted content or formatted code to an existing file as a multiline string using triple backticks (```).. Replace '[FILENAME]' with the desired filename and '[CONTENT]'"
     },
     {
         "command_string": "read_content_from_file",
@@ -42,12 +38,12 @@ botcommands = [
     {
         "command_string": "search_google",
         "command_argument": "[DETAILED QUERY]|[PAGENUMBER]",
-        "command_description": "Creates a list of url's and snippets by passing a query and page number."
+        "command_description": "Provides a list of url's for scraping or browsing."
     },
     {
         "command_string": "scrape_website_url",
         "command_argument": "https://url|raw_html|max_length=#",
-        "command_description": "Used to scrape the contents of a website with http or https. Use wget cmd for file ext. Example: https://example.com|raw_html|max_length=500"
+        "command_description": "Scrape text or html based on raw_html variable. url|raw_html|character_return_length=number Example: https://example.com|false|character_return_length=3000"
     },
     {
         "command_string": "save_research",

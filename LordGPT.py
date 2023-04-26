@@ -15,10 +15,11 @@ from dotenv import load_dotenv
 from termcolor import colored
 from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
+from unidecode import unidecode
 import pdfkit
 import requests
 
-from scripts.bot_prompts import command_list, bot_prompt, task_prompt
+from scripts.bot_prompts import command_list, bot_prompt
 from scripts.bot_commands import botcommands
 
 load_dotenv(override=True)
@@ -29,26 +30,35 @@ if not os.path.exists(working_folder):
 
 # endregion
 
-#region ### CHECK FOR UPDATES ###
+# region ### GLOBAL FUNCTIONS ###
 config_file = "config.json"
 current_version = "1.0.0"
 update_url = "https://thelordg.com/version.txt"
 download_link = "https://github.com/Cytranics/LordGPT"
 
-global success
 success = True
 api_count = 0
 api_type = None
 message_history = []
 debug_code = False
 
+
 def debug_log(message):
     if debug_code:
-        print(message)
+        #print(message)
+
+        # Create the debug.txt file path
+        debug_file_path = os.path.join(working_folder, "debug.txt")
+
+        # Write the message to the debug.txt file
+        with open(debug_file_path, "a") as debug_file:
+            debug_file.write(f"{message}\n")
+
 
 def set_global_success(value):
     global success
     success = value
+
 
 def check_for_updates():
     try:
@@ -62,11 +72,10 @@ def check_for_updates():
     except requests.exceptions.RequestException as e:
         print("Error checking for updates:", e)
 
+
 check_for_updates()
 
-# endregion
 
-# region ### PYINSTALLER CODE ###
 def prompt_user_for_config():
     global debug_code
     api_key = input("Please enter your API key: ")
@@ -87,19 +96,7 @@ def prompt_user_for_config():
         else:
             print("Invalid selection. Please enter 1 or 2.")
 
-    
-    while debug_code not in [1, 2]:
-        print("Enable debug mode:")
-        print("1. Enable")
-        print("2. Disable")
-        debug_choice = int(input("Enter the number corresponding to your choice: "))
-
-        if debug_choice == 1:
-            debug_code = True
-        elif debug_choice == 2:
-            debug_code = False
-        else:
-            print("Invalid selection. Please enter 1 or 2.")
+    debug_code = int(input("Enable debug mode (1 for Enable, 2 for Disable): ")) == 1
 
     return {
         'api_key': api_key,
@@ -109,11 +106,12 @@ def prompt_user_for_config():
         'debug_code': debug_code
     }
 
+
 if getattr(sys, 'frozen', False):
     print('Bundle Detected, asking user for variables.')
     api_function = "OPENAI"
     api_url = "https://api.openai.com/v1/chat/completions"
-    max_tokens = 1500
+    max_tokens = 800 
     temperature = 0.8
     frequency_penalty = 0.0
     presence_penalty = 0.0
@@ -137,7 +135,6 @@ if getattr(sys, 'frozen', False):
 else:
     debug_log('Not running from PyInstaller bundle')
 
-    # region ### MODEL SETTINGS ###
     api_function = os.getenv("API_FUNCTION", "default_api_function")
     max_tokens = int(os.getenv("MAX_TOKENS", "100"))
     temperature = float(os.getenv("TEMPERATURE", "0.8"))
@@ -151,8 +148,6 @@ else:
     api_timeout = int(os.environ.get("API_TIMEOUT", 90))
     google_api_key = os.environ["GOOGLE_API_KEY"]
     google_search_id = os.environ["CUSTOM_SEARCH_ENGINE_ID"]
-
-    # endregion
 #endregion
 
 # region ### FUNCTIONS ###
@@ -227,20 +222,18 @@ def remove_brackets(text):
 
 # Create JSON message function
 def create_json_message(
-    response_120_words="[DETAILED REASONING]",
+    response_120_words="[DETAILED RESPONSE]",
     command_string="[COMMAND]",
     command_argument="[ARGUMENT]",
     current_task="[CURRENT TASK]",
-    next_task="[NEXT TASK]",
-    goal_completion_status="[GOAL COMPLETION %]",
+    suggested_next_task="[SUGGESTED NEXT TASK]",
 ):
     json_message = {
         "response_120_words": response_120_words,
         "command_string": command_string,
         "command_argument": command_argument,
         "current_task": current_task,
-        "next_task": next_task,
-        "goal_completion_status": goal_completion_status,
+        "suggested_next_task": suggested_next_task,
     }
     return json.dumps(json_message)
 
@@ -315,16 +308,14 @@ def query_bot(messages, retries=20):
                     response = responseformatted["response_120_words"]
                     command_string = responseformatted["command_string"]
                     command_argument = responseformatted["command_argument"]
-                    next_task = responseformatted["next_task"]
-                    goal_status = responseformatted["goal_completion_status"]
+                    suggested_next_task = responseformatted["suggested_next_task"]
 
                     return (
                         response,
                         command_string,
                         command_argument,
                         current_task,
-                        next_task,
-                        goal_status,
+                        suggested_next_task,
                     )
                 else:
                     alternate_api(api_count)
@@ -353,7 +344,7 @@ def query_bot(messages, retries=20):
 
 
 def create_pdf_from_html_markup(
-    response, command_string, command_argument, current_task, next_task, goal_status
+    response, command_string, command_argument, current_task, suggested_next_task
 ):
     try:
         # Parse the input string to extract the filename and content
@@ -383,7 +374,7 @@ def create_pdf_from_html_markup(
             command_argument,
             current_task,
             "Determine next task",
-            goal_status,
+            
         )
     except Exception as e:
         debug_log(f"Error: {e}")
@@ -392,8 +383,8 @@ def create_pdf_from_html_markup(
             command_string,
             command_argument,
             current_task,
-            "Research Error",
-            goal_status,
+            "Google Error",
+            
         )
 
 # endregion
@@ -401,7 +392,7 @@ def create_pdf_from_html_markup(
 # region ### SHELL COMMANDS ###
 
 def run_bash_shell_command(
-    response, command_string, command_argument, current_task, next_task, goal_status
+    response, command_string, command_argument, current_task, suggested_next_task
 ):
     process = subprocess.Popen(
         command_argument,
@@ -423,8 +414,8 @@ def run_bash_shell_command(
             command_string,
             command_argument,
             "I should research the error",
-            next_task,
-            goal_status,
+            suggested_next_task,
+            
         )
 
     return_code = process.returncode
@@ -476,8 +467,8 @@ def run_bash_shell_command(
         command_string,
         command_argument,
         "I should analyze the output to ensure success and research any errors",
-        next_task,
-        goal_status,
+        suggested_next_task,
+        
     )
 
 
@@ -488,7 +479,7 @@ def run_bash_shell_command(
 import subprocess
 
 def run_win_shell_command(
-    response, command_string, command_argument, current_task, next_task, goal_status
+    response, command_string, command_argument, current_task, suggested_next_task
 ):
     process = subprocess.Popen(
         command_argument,
@@ -510,8 +501,8 @@ def run_win_shell_command(
             command_string,
             command_argument,
             "I should research the error",
-            next_task,
-            goal_status,
+            suggested_next_task,
+            
         )
 
     return_code = process.returncode
@@ -563,8 +554,8 @@ def run_win_shell_command(
         command_string,
         command_argument,
         "I should analyze the output to ensure success and research any errors",
-        next_task,
-        goal_status,
+        suggested_next_task,
+        
     )
 
 #endregion
@@ -573,13 +564,13 @@ def run_win_shell_command(
 
 
 def no_command(
-    response, command_string, command_argument, current_task, next_task, goal_status
+    response, command_string, command_argument, current_task, suggested_next_task
 ):
     response_string = json.dumps(command_argument)
     set_global_success(True)
     debug_log(f"Response String: {response_string}")
     return create_json_message(
-        response, command_string, command_argument, current_task, next_task, goal_status
+        response, command_string, command_argument, current_task, suggested_next_task
     )
 
 
@@ -587,7 +578,7 @@ def no_command(
 
 # region ### SAVE RESEARCH ###
 
-def save_research(response, command_string, command_argument, current_task, next_task, goal_status):
+def save_research(response, command_string, command_argument, current_task, suggested_next_task):
     try:
         # Split the command argument into title and content
         title = command_argument.split("Title: ")[1].split(" ResearchContent: ")[0]
@@ -598,8 +589,8 @@ def save_research(response, command_string, command_argument, current_task, next
             command_string,
             command_argument,
             current_task,
-            next_task,
-            goal_status,
+            suggested_next_task,
+            
         )
 
     # Get the current datetime
@@ -609,7 +600,8 @@ def save_research(response, command_string, command_argument, current_task, next
     research = {"DateTime": current_time, "Title": title, "ResearchContent": content}
 
     # Save the research to a JSON node
-    with open("research.json", "a") as f:
+    research_file_path = os.path.join(working_folder, "research.json")
+    with open(research_file_path, "a") as f:
         f.write(json.dumps(research))
         f.write("\n")
     
@@ -618,9 +610,10 @@ def save_research(response, command_string, command_argument, current_task, next
         command_string,
         command_argument,
         current_task,
-        next_task,
-        goal_status,
+        suggested_next_task,
+        
     )
+
 
 
 # endregion
@@ -628,25 +621,29 @@ def save_research(response, command_string, command_argument, current_task, next
 # region ### FETCH RESEARCH ###
 
 
-def fetch_research(
-    response, command_string, command_argument, current_task, next_task, goal_status
-):
+def fetch_research(response, command_string, command_argument, current_task, suggested_next_task):
     research_list = []
-    with open("research.json", "r") as f:
+    
+    # Fetch the research.json file from the working_folder
+    research_file_path = os.path.join(working_folder, "research.json")
+    with open(research_file_path, "r") as f:
         for line in f:
             research = json.loads(line)
             research_list.append(research)
+            
     formatted_research = ""
     for research in research_list:
         formatted_research += f'DateTime: {research["DateTime"]}\nTitle: {research["Title"]}\nResearchContent: {research["ResearchContent"]}\n\n'
+        
     return create_json_message(
         formatted_research,
         command_string,
         command_argument,
         current_task,
-        next_task,
-        goal_status,
+        suggested_next_task,
+        
     )
+
 
 
 # endregion
@@ -656,7 +653,7 @@ def fetch_research(
 
 
 def create_task_list(
-    response, command_string, command_argument, current_task, next_task, goal_status
+    response, command_string, command_argument, current_task, suggested_next_task
 ):
     if command_argument is not None:
         message_handler(None, command_argument, "task")
@@ -665,19 +662,17 @@ def create_task_list(
         command_string,
         command_argument,
         current_task,
-        next_task,
-        goal_status,
+        suggested_next_task,
+        
     )
 
 
 # endregion
 
 # region ### CREATE PYTHON SCRIPT ###
-# Function names prompt the model
-
 
 def create_python_script(
-    response, command_string, command_argument, current_task, next_task, goal_status
+    response, command_string, command_argument, current_task, suggested_next_task
 ):
     try:
         filename = None
@@ -693,12 +688,12 @@ def create_python_script(
         else:
             set_global_success(False)
             return create_json_message(
-                "Invalid args. Use the Format: Filename: [FILENAME] Content: [CONTENT]",
+                "Invalid args. Use the Format: Filename: [FILENAME] Content: ```[CONTENT]```",
                 command_string,
                 command_argument,
                 current_task,
                 "Try again using the correct arguments.",
-                goal_status,
+                
             )
 
         os.makedirs(working_folder, exist_ok=True)
@@ -714,8 +709,8 @@ def create_python_script(
             command_string,
             command_argument,
             current_task,
-            next_task,
-            goal_status,
+            suggested_next_task,
+            
         )
 
     except Exception as e:
@@ -727,11 +722,8 @@ def create_python_script(
             command_argument,
             current_task,
             "Read the contents of the script to ensure its formatted correctly, or reserach the internet on the error.",
-            goal_status,
+            
         )
-
-
-
 
 # endregion
 
@@ -739,7 +731,7 @@ def create_python_script(
 
 
 def write_new_content_to_file(
-    response, command_string, command_argument, current_task, next_task, goal_status
+    response, command_string, command_argument, current_task, suggested_next_task
 ):
     try:
         filename = None
@@ -755,12 +747,12 @@ def write_new_content_to_file(
         else:
             set_global_success(False)
             return create_json_message(
-                "Invalid args. Use the Format: Filename: [FILENAME] Content: [CONTENT]",
+                "Invalid args. Use the Format: Filename: [FILENAME] Content: ```[CONTENT]```",
                 command_string,
                 command_argument,
                 current_task,
                 "Try the command again using the correct arguments.",
-                goal_status,
+                
             )
 
         if os.path.exists(os.path.join(working_folder, filename)):
@@ -778,8 +770,8 @@ def write_new_content_to_file(
             command_string,
             command_argument,
             current_task,
-            next_task,
-            goal_status,
+            suggested_next_task,
+            
         )
 
     except Exception as e:
@@ -790,8 +782,8 @@ def write_new_content_to_file(
             command_string,
             command_argument,
             "Retry or Reserch Current Task",
-            next_task,
-            goal_status,
+            suggested_next_task,
+            
         )
 
 
@@ -800,7 +792,7 @@ def write_new_content_to_file(
 # region ## APPEND CONTENT TO FILE ##
 
 def append_content_to_existing_file(
-    response, command_string, command_argument, current_task, next_task, goal_status
+    response, command_string, command_argument, current_task, suggested_next_task
 ):
     try:
         # Extract filename and content using regex
@@ -813,12 +805,12 @@ def append_content_to_existing_file(
         else:
             set_global_success(False)
             return create_json_message(
-                "Invalid args. Use the Format: Filename: [FILENAME] Content: [CONTENT]",
+                "Invalid format. Use the Format: Filename: [FILENAME] Content: ```[CONTENT]```",
                 command_string,
                 command_argument,
                 current_task,
                 "Try again using the correct arguments.",
-                goal_status,
+                
             )
 
         if not os.path.exists(working_folder):
@@ -834,8 +826,8 @@ def append_content_to_existing_file(
             command_string,
             command_argument,
             current_task,
-            next_task,
-            goal_status,
+            suggested_next_task,
+            
         )
     except Exception as e:
         set_global_success(False)
@@ -845,8 +837,8 @@ def append_content_to_existing_file(
             command_string,
             command_argument,
             "Retry or Reserch Current Task",
-            next_task,
-            goal_status,
+            suggested_next_task,
+            
         )
 
 
@@ -856,7 +848,7 @@ def append_content_to_existing_file(
 
 
 def read_content_from_file(
-    response, command_string, command_argument, current_task, next_task, goal_status
+    response, command_string, command_argument, current_task, suggested_next_task
 ):
     try:
         filename = None
@@ -879,7 +871,7 @@ def read_content_from_file(
                 command_argument,
                 current_task,
                 "I will use to proper format and try again",
-                goal_status,
+                
             )
 
         # Concatenate the working_folder path with the filename
@@ -896,7 +888,7 @@ def read_content_from_file(
                 command_argument,
                 current_task,
                 "I will check that my file name is correct or fix the format of my argument",
-                goal_status,
+                
             )
 
         with open(file_path, "r") as file:
@@ -907,8 +899,8 @@ def read_content_from_file(
             command_string,
             command_argument,
             current_task,
-            next_task,
-            goal_status,
+            suggested_next_task,
+            
         )
     except Exception as e:
         set_global_success(True)
@@ -919,14 +911,14 @@ def read_content_from_file(
             command_argument,
             current_task,
             "I will research the error",
-            goal_status,
+            
         )
 
 
 # endregion
 
 #region ### DOWNLOAD FILES ###
-def download_file(response, command_string, command_argument, current_task, next_task, goal_status):
+def download_file(response, command_string, command_argument, current_task, suggested_next_task):
     if not os.path.exists(working_folder):
         os.makedirs(working_folder)
 
@@ -948,8 +940,8 @@ def download_file(response, command_string, command_argument, current_task, next
             command_string,
             command_argument,
             current_task,
-            next_task,
-            goal_status,
+            suggested_next_task,
+            
         )
         else:
             return create_json_message(
@@ -957,8 +949,8 @@ def download_file(response, command_string, command_argument, current_task, next
             command_string,
             command_argument,
             current_task,
-            next_task,
-            goal_status,
+            suggested_next_task,
+            
         )
 
     except subprocess.CalledProcessError as e:
@@ -967,8 +959,8 @@ def download_file(response, command_string, command_argument, current_task, next
             command_string,
             command_argument,
             current_task,
-            next_task,
-            goal_status,
+            suggested_next_task,
+            
         )
 #endregion        
 
@@ -976,7 +968,7 @@ def download_file(response, command_string, command_argument, current_task, next
 
 
 def search_google(
-    response, command_string, command_argument, current_task, next_task, goal_status
+    response, command_string, command_argument, current_task, suggested_next_task
 ):
     try:
         args = command_argument.split("|")
@@ -1035,7 +1027,7 @@ def search_google(
                 command_argument,
                 current_task,
                 "I will choose another search term",
-                goal_status,
+                
             )
 
         formatted_results = ""
@@ -1052,8 +1044,8 @@ def search_google(
             command_string,
             command_argument,
             current_task,
-            next_task,
-            goal_status,
+            suggested_next_task,
+            
         )
     except Exception as e:
         debug_log(f"Error: {str(e)}")
@@ -1064,7 +1056,7 @@ def search_google(
             command_argument,
             current_task,
             "I will double check my arguments or move to next task.",
-            goal_status,
+            
         )
 
 
@@ -1073,14 +1065,17 @@ def search_google(
 # region ### BROWSE WEBSITE ###
 
 
-def remove_illegal_chars(text):
-    return "".join(c for c in text if c.isprintable() and c != "\\")
+def sanitize_content(content):
+    content = unidecode(content)
+    content = content.encode("ascii", "ignore").decode("ascii")
+    return content
 
-def scrape_website_url(
-    response, command_string, command_argument, current_task, next_task, goal_status
-):
+
+def scrape_website_url(response, command_string, command_argument, current_task, suggested_next_task):
     try:
-        responsehtml = requests.get(command_argument, timeout=30)
+        url, raw_html, max_length = command_argument.split('|')
+        max_length = int(max_length.split('=')[1])
+        responsehtml = requests.get(url, timeout=30)
         responsehtml.raise_for_status()
     except requests.RequestException as e:
         return create_json_message(
@@ -1088,37 +1083,39 @@ def scrape_website_url(
             command_string,
             command_argument,
             current_task,
-            next_task,
-            goal_status,
+            suggested_next_task,
         )
 
     try:
-        soup = BeautifulSoup(responsehtml.text, "html.parser")
-        content = soup.get_text()
+        if raw_html.lower() == 'true':
+            content = responsehtml.text
+        else:
+            soup = BeautifulSoup(responsehtml.text, "html.parser")
+            content = soup.get_text()
+
         content = content.replace("\n", " ")
         debug_log(content)
-        # Add slicing to limit content length
-        content_cleaned = remove_illegal_chars(content)[:max_characters]
+        content_cleaned = sanitize_content(content)[:max_length]
         content_json_escaped = json.dumps(content_cleaned)
 
     except Exception as e:
         return create_json_message(
-            "Error: " + {str(e)},
+            "Error: " + str(e) +
+            "Check your argument or move on to another url.",
             command_string,
             command_argument,
             current_task,
-            next_task,
-            goal_status,
+            suggested_next_task,
         )
 
     return create_json_message(
-        "URL: " + command_argument + "Content: " + content_json_escaped,
+        "URL: " + url + "\nContent: " + content_json_escaped,
         command_string,
         command_argument,
         current_task,
-        next_task,
-        goal_status,
+        suggested_next_task,
     )
+
 
 
 # endregion
@@ -1127,7 +1124,7 @@ def scrape_website_url(
 
 
 def mission_accomplished(
-    response, command_string, command_argument, current_task, next_task, goal_status
+    response, command_string, command_argument, current_task, suggested_next_task
 ):
     set_global_success(True)
     print("Mission accomplished:", command_argument)
@@ -1137,7 +1134,7 @@ def mission_accomplished(
 # endregion
 # endregion
 
-# region ### HANDLER - MESSAGE ###
+# region ### MESSAGE HANDLER ###
 
 
 def message_handler(current_prompt, message, role):
@@ -1157,19 +1154,19 @@ def message_handler(current_prompt, message, role):
 
     def limit_message_history():
         while len(message_history) > max_conversation + 1:
-            if message_history[3]["role"] != "task":
-                message_history.pop(1)
-            else:
-                message_history.pop(2)
+            message_history.pop(2)
+
 
     if len(message_history) == 0:
-        message_history.insert(0, {"role": "system", "content": current_prompt})
+        message_history.insert(
+            0, {"role": "system", "content": current_prompt})
     elif role == "system":
         message_history[0] = {"role": "system", "content": current_prompt}
 
     if message is not None:
         if role == "task":
-            message_history.insert(1, {"role": "user", "content": message})
+            message_history.pop(1)
+            message_history.insert(1, {"role": "assistant", "content": message})
             return
         else:
             update_message_history(role, message)
@@ -1180,11 +1177,11 @@ def message_handler(current_prompt, message, role):
 
 # endregion
 
-# region ### HANDLER - COMMAND ###
+# region ### COMMAND HANDLER ###
 
 
 def command_handler(
-    response, command_string, command_argument, current_task, next_task, goal_status
+    response, command_string, command_argument, current_task, suggested_next_task
 ):
     if not command_string:  # Check if the command_string is empty or None
         return create_json_message(
@@ -1208,13 +1205,45 @@ def command_handler(
             + create_json_message(),
         )
     return function(
-        response, command_string, command_argument, current_task, next_task, goal_status
+        response, command_string, command_argument, current_task, suggested_next_task
     )
 
 
 # endregion
 
-# region ### HANDLER - ROUTING ###
+# region ### ROUTING HANDLER ###
+
+# region ### OLD SCHOOL THROWBACK ##
+def bbs_ascii_lordgpt():
+    letters = {
+        'L': ["██╗",
+              "██║",
+              "██║",
+              "██║",
+              "███"],
+        'O': ["██████",
+              "██╔═██╗",
+              "██║ ██║",
+              "██║ ██║",
+              "██████"],
+        'R': [" █████╗",
+              "██╔═██╗",
+              "█████╔╝",
+              "██╔═██╗",
+              " ██║ ██"],
+        'D': [" █████╗",
+              "██╔═██╗",
+              "██║ ██║",
+              "██║ ██║",
+              " ██████"]}
+
+    word = "LORD"
+    for row in range(5):
+        line = ""
+        for letter in word:
+            line += letters[letter][row] + " "
+        print(line)
+#endregion
 
 
 def openai_bot_handler(current_prompt, message, role):
@@ -1224,27 +1253,25 @@ def openai_bot_handler(current_prompt, message, role):
         command_string,
         command_argument,
         current_task,
-        next_task,
-        goal_status,
+        suggested_next_task,
+        
     ) = query_bot(
         messages
     )  # type: ignore
 
-    print(colored("Overall Goal: ", color="yellow"), end="")
-    typing_print(str(goal_status) + "")
     print(colored("LordGPT Thoughts: ", color="green"), end="")
     typing_print(str(response))
-    print(colored("Currently : ", color="blue"), end="")
+    print(colored("Currently :       ", color="blue"), end="")
     typing_print(str(current_task) + "")
-    print(colored("Next Task: ", color="magenta"), end="")
-    typing_print(str(next_task) + "")
-    print(colored("Executing Command: ", color="red"), end="")
+    print(colored("Next Task:        ", color="magenta"), end="")
+    typing_print(str(suggested_next_task) + "")
+    print(colored("Executing CMD:    ", color="red"), end="")
     typing_print(str(command_string))
-    print(colored("Command Argument: ", color="red"), end="\n")
+    print(colored("CMD Argument:     ", color="red"), end="")
     typing_print(str(command_argument) + "\n\n")
 
     handler_response = command_handler(
-        response, command_string, command_argument, current_task, next_task, goal_status
+        response, command_string, command_argument, current_task, suggested_next_task
     )
 
     if success == True:
@@ -1254,21 +1281,22 @@ def openai_bot_handler(current_prompt, message, role):
 
 # endregion
 
-# region ### MAIN LOOP ###
+# region ### MAIN ###
 
 
 def main_loop():
     # Ask the user for the goal of the bot
-    print(colored("Goal Tips: ", "green"))
+    print(colored("Tips: ", "green"))
+
+
     print(
         colored(
-            "1. Tips: Define a clear Goal with steps YOU would take to complete it." +
-            "\n2. Example Goal: Find my location, Gather the 5 day weather forecast for my location, save the detailed results of each day to a PDF." +  
-            "\n3. The Lord does support more natural language, but does his best when you lay out the steps.." + 
-            "\n4. Report any issues to: https://github.com/Cytranics/LordGPT/issues"
-            "\n5. If you would like to contribute email agentgrey@thelordg.com", "yellow",
+            "1. We are constantly refining GPT3.5. Its hit or miss. LordGPT works best with GPT4." +
+            "\n2. Example Goal: Determine my location, gather weather data for my location and create a PDF report with the information." +
+            "\n3. Report Issues: https://github.com/Cytranics/LordGPT/issues"
+            "\n4. Discord: https://discord.gg/2jT32cM8", "yellow",
         )
-    )
+)
 
     user_goal = input("Goal: ")
     print(colored("Creating detailed plan to achive the goal....", "green"))
@@ -1277,7 +1305,7 @@ def main_loop():
         print(colored("Goal: " + user_goal, "green"))
     set_global_success(True)
 
-    bot_send = openai_bot_handler(bot_prompt + user_goal, "go", "assistant")
+    bot_send = openai_bot_handler(bot_prompt + user_goal, "Replace [TASKLIST] with your detailed task list for the goal" + user_goal, "assistant")
 
     while True:
         num_input = input(
@@ -1300,6 +1328,7 @@ def main_loop():
 
 
 if __name__ == "__main__":
+    bbs_ascii_lordgpt()
     main_loop()
 
 
