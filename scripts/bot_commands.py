@@ -22,17 +22,17 @@ botcommands = [
     {
         "command_string": "create_python_script",
         "command_argument": "Filename: [FILENAME] Content: [CONTENT]",
-        "command_description": "Writes and save a formatted python script that does not require an API key to execute. Replace '[FILENAME]' with the desired filename and '[CONTENT]' with the formatted python script as a multiline string using triple, double quotes.. Do not send \line breaks. Ensure you create a full working script with correct import modules, and verify non interactive scripts."
+        "command_description": "Write and save a formatted python script that does not require an API key to execute. Replace '[FILENAME]' with the desired filename and '[CONTENT]' with the formatted python script as a multiline string using triple backticks (```)."
     },
     {
         "command_string": "write_new_content_to_file",
         "command_argument": "Filename: [FILENAME] Content: [CONTENT]",
-        "command_description": "Write and save formatted text content to a single file. Replace '[FILENAME]' with the desired filename and '[CONTENT]' with the content sent as a multiline string using triple, double quotes"
+        "command_description": "Write and save formatted text content to a single file. Replace '[FILENAME]' with the desired filename and '[CONTENT]' with the content sent as a multiline string using triple backticks (```)."
     },
     {
         "command_string": "append_content_to_existing_file",
         "command_argument": "Filename: [FILENAME] Content: [CONTENT]",
-        "command_description": "Append formatted content or formatted code to an existing file. Replace '[FILENAME]' with the desired filename and '[CONTENT]' with the file content as a multiline string using triple, double quotes."
+        "command_description": "Append formatted content or formatted code to an existing file. Replace '[FILENAME]' with the desired filename and '[CONTENT]' with the file content sent as a multiline string using triple backticks (```)."
     },
     {
         "command_string": "read_content_from_file",
