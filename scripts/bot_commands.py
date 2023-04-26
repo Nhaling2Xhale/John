@@ -12,7 +12,7 @@ botcommands = [
     {
         "command_string": "download_file",
         "command_argument": "url",
-        "command_description": "Used to download a file from a URL. Replace 'url' with the single web address"
+        "command_description": "Used to download a file or PDF other than html from a URL. Replace 'url' with the url and filename"
     },
     {
         "command_string": "create_pdf_from_html_markup",
