@@ -932,7 +932,7 @@ def read_content_from_file(
 # endregion
 
 #region ## DOWNLOAD FILES ###
-def download_file(command_argument):
+def download_file(response, command_string, command_argument, current_task, next_task, goal_status):
     if not os.path.exists(working_folder):
         os.makedirs(working_folder)
 
