@@ -5,6 +5,7 @@ JOIN US ON DISCORD: https://discord.gg/mhGtn6fb
 UPDATE: 4/26/2023
 - Major Update:
 - Reworked Prompt. I think its great, you be the judge.
+- New Prompt enables almost 100% functionality with GPT3.5
 - Fixed issue with invalid characters in Browse Web.
 - New prompt fixes alot of issues with things.
 - Debug flag now writes to the working folder as debug.txt.
