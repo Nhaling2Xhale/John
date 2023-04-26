@@ -1,4 +1,8 @@
+
+
 # region ### IMPORTS ###
+
+# Standard Library Imports
 import os
 import sys
 import re
@@ -11,145 +15,65 @@ import requests.exceptions
 from time import sleep
 from typing import Dict
 
+# Third-Party Imports
 from dotenv import load_dotenv
 from termcolor import colored
 from bs4 import BeautifulSoup
+from PyPDF2 import PdfReader
+from jsmin import jsmin
 from fake_useragent import UserAgent
 import pdfkit
 import requests
+import tiktoken
 
+# Local Imports
 from scripts.bot_prompts import command_list, bot_prompt, task_prompt
 from scripts.bot_commands import botcommands
 
+# Load environment variables
 load_dotenv(override=True)
 current_path = os.getcwd()
+# Working Folder Name
 working_folder = os.path.join(current_path, 'LordGPT_folder')
 if not os.path.exists(working_folder):
     os.makedirs(working_folder)
 
 # endregion
 
-#region ### CHECK FOR UPDATES ###
-config_file = "config.json"
-current_version = "1.0.0"
-update_url = "https://thelordg.com/version.txt"
-download_link = "https://github.com/Cytranics/LordGPT"
+# region ### MODEL SETTINGS ###
+api_function = os.getenv("API_FUNCTION")
+max_tokens = int(os.getenv("MAX_TOKENS"))
+temperature = float(os.getenv("TEMPERATURE"))
+frequency_penalty = float(os.getenv("FREQUENCY_PENALTY"))
+presence_penalty = float(os.getenv("PRESENCE_PENALTY"))
+top_p = float(os.getenv("TOP_P"))
+local_memory_file = os.getenv("LOCAL_MEMORY_FILE", "memory.json")
+encoding = tiktoken.get_encoding("cl100k_base")
+debug_code = bool(os.getenv("DEBUG_CODE"))
+# endregion
 
-global success
-success = True
-api_count = 0
-api_type = None
+# region ### GLOBAL VARIABLES ###
+
+# Message history
 message_history = []
+
+#Conversation History Max
+#Note:When LordGPT Creates Tasks its saved for life of execution.
 max_conversation = 6
+
+# Web, file and Shell content return length
 max_characters = 3000
 
+# Debugging settings
+# Send requests through BrightData proxy.
+proxy_enabled = False
+
+# Global success variable
 def set_global_success(value):
     global success
     success = value
 
-def check_for_updates():
-    try:
-        response = requests.get(update_url)
-        response.raise_for_status()
-        latest_version = response.text.strip()
-
-        if latest_version != current_version:
-            print(print(colored(
-                f"A new version ({latest_version}) is available! Please visit {download_link} to download the update. Check the README.md for changes.", "red")))
-    except requests.exceptions.RequestException as e:
-        print("Error checking for updates:", e)
-
-check_for_updates()
-
 # endregion
-
-# region ### PYINSTALLER CODE ###
-def prompt_user_for_config():
-    api_key = input("Please enter your API key: ")
-    google_api_key = input("Please enter your Google API key: ")
-    google_search_id = input("Please enter your Google Search ID: ")
-
-    model = ""
-    while model not in ["gpt-3.5-turbo", "gpt-4"]:
-        print("Please select a model:")
-        print("1. gpt-3.5-turbo")
-        print("2. gpt-4")
-        model_choice = input("Enter the number corresponding to your choice: ")
-
-        if model_choice == "1":
-            model = "gpt-3.5-turbo"
-        elif model_choice == "2":
-            model = "gpt-4"
-        else:
-            print("Invalid selection. Please enter 1 or 2.")
-
-    debug_code = ""
-    while debug_code not in [1, 2]:
-        print("Enable debug mode:")
-        print("1. Enable")
-        print("2. Disable")
-        debug_choice = int(input("Enter the number corresponding to your choice: "))
-
-        if debug_choice == 1:
-            debug_code = 1
-        elif debug_choice == 2:
-            debug_code = 2
-        else:
-            print("Invalid selection. Please enter 1 or 2.")
-
-    return {
-        'api_key': api_key,
-        'model': model,
-        'google_api_key': google_api_key,
-        'google_search_id': google_search_id,
-        'debug_code': debug_code
-    }
-
-if getattr(sys, 'frozen', False):
-    print('Bundle Detected, asking user for variables.')
-    api_function = "OPENAI"
-    api_url = "https://api.openai.com/v1/chat/completions"
-    max_tokens = 1500
-    temperature = 0.8
-    frequency_penalty = 0.0
-    presence_penalty = 0.0
-    top_p = 1.0
-    local_memory_file = "memory.json"
-    debug_code = True
-    api_throttle = 10
-    api_retry = 10
-    api_timeout = 90
-    api_count = 0
-
-    if os.path.exists(config_file):
-        with open(config_file, 'r') as f:
-            config_data = json.load(f)
-    else:
-        config_data = prompt_user_for_config()
-        print("Configuration saved to config.json, edit the file to change additional settings")
-
-        with open(config_file, 'w') as f:
-            json.dump(config_data, f)
-else:
-    print('Not running from PyInstaller bundle')
-
-    # region ### MODEL SETTINGS ###
-    api_function = os.getenv("API_FUNCTION", "default_api_function")
-    max_tokens = int(os.getenv("MAX_TOKENS", "100"))
-    temperature = float(os.getenv("TEMPERATURE", "0.8"))
-    frequency_penalty = float(os.getenv("FREQUENCY_PENALTY", "0.0"))
-    presence_penalty = float(os.getenv("PRESENCE_PENALTY", "0.0"))
-    top_p = float(os.getenv("TOP_P", "1.0"))
-    local_memory_file = os.getenv("LOCAL_MEMORY_FILE", "memory.json")
-    debug_code = bool(os.getenv("DEBUG_CODE", "False"))
-    api_throttle = int(os.environ.get("API_THROTTLE", 10))
-    api_retry = int(os.environ.get("API_RETRY", 10))
-    api_timeout = int(os.environ.get("API_TIMEOUT", 90))
-    google_api_key = os.environ["GOOGLE_API_KEY"]
-    google_search_id = os.environ["CUSTOM_SEARCH_ENGINE_ID"]
-
-    # endregion
-#endregion
 
 # region ### FUNCTIONS ###
 
@@ -159,8 +83,16 @@ def debug_log(message):
         print(message)
 
 # Alternate API calls between Azure and OpenAI
-
+api_url = None
+api_key = None
+model = None
+api_type = None
+api_count = 0
 # API settings, set throttle lower if using alternate to speed up API calls
+api_throttle = int(os.environ.get("API_THROTTLE", 10))
+api_retry = int(os.environ.get("API_RETRY", 10))
+api_timeout = int(os.environ.get("API_TIMEOUT", 60))
+
 
 def alternate_api(number):
     global api_count
@@ -169,48 +101,45 @@ def alternate_api(number):
     global max_tokens
     global api_type
     global model
-    if getattr(sys, 'frozen', False):
-        return api_url, api_key, model, api_type
-    else:
-        if api_function == "ALTERNATE":
-            api_count += 1
-            if number % 2 == 0:
-                api_url = os.getenv("AZURE_URL")
-                api_key = os.getenv("AZURE_API_KEY")
-                model = os.getenv("AZURE_MODEL_NAME")
-                api_type = "AZURE"
-            else:
-                api_url = os.getenv("OPENAI_URL")
-                api_key = os.getenv("OPENAI_API_KEY")
-                model = os.getenv("OPENAI_MODEL_NAME")
-                api_type = "OPENAI"
-        elif api_function == "AZURE":
+
+    if api_function == "ALTERNATE":
+        api_count = +1
+        if number % 2 == 0:
             api_url = os.getenv("AZURE_URL")
             api_key = os.getenv("AZURE_API_KEY")
             model = os.getenv("AZURE_MODEL_NAME")
             api_type = "AZURE"
-        elif api_function == "OPENAI":
+        else:
             api_url = os.getenv("OPENAI_URL")
             api_key = os.getenv("OPENAI_API_KEY")
             model = os.getenv("OPENAI_MODEL_NAME")
             api_type = "OPENAI"
-        else:
-            raise ValueError(
-                "Invalid API_FUNCTION value. Supported values are 'AZURE', 'OPENAI', or 'ALTERNATE'."
-            )
-        debug_log(
-            "\nAPI Count: "
-            + str(api_count)
-            + "\nAPI URL: "
-            + api_url
-            + "\nAPI Key: "
-            + api_key
-            + "\nAPI Model: "
-            + model
-            + "\nAPI Type: "
-            + api_type
+    elif api_function == "AZURE":
+        api_url = os.getenv("AZURE_URL")
+        api_key = os.getenv("AZURE_API_KEY")
+        model = os.getenv("AZURE_MODEL_NAME")
+        api_type = "AZURE"
+    elif api_function == "OPENAI":
+        api_url = os.getenv("OPENAI_URL")
+        api_key = os.getenv("OPENAI_API_KEY")
+        model = os.getenv("OPENAI_MODEL_NAME")
+        api_type = "OPENAI"
+    else:
+        raise ValueError(
+            "Invalid API_FUNCTION value. Supported values are 'AZURE', 'OPENAI', or 'ALTERNATE'."
         )
-    
+    debug_log(
+        "\nAPI Count: "
+        + str(api_count)
+        + "\nAPI URL: "
+        + api_url
+        + "\nAPI Key: "
+        + api_key
+        + "\nAPI Model: "
+        + model
+        + "\nAPI Type: "
+        + api_type
+    )
     return api_url, api_key, model, api_type
 
 
@@ -276,26 +205,8 @@ def get_random_user_agent():
 
 def query_bot(messages, retries=20):
     alternate_api(api_count)
-    debug_log(f"Bundle Detected, asking user for variables.\n"
-          f"api_function: {api_function}\n"
-          f"max_tokens: {max_tokens}\n"
-          f"temperature: {temperature}\n"
-          f"frequency_penalty: {frequency_penalty}\n"
-          f"presence_penalty: {presence_penalty}\n"
-          f"top_p: {top_p}\n"
-          f"local_memory_file: {local_memory_file}\n"
-          f"debug_code: {debug_code}\n"
-          f"api_throttle: {api_throttle}\n"
-          f"api_retry: {api_retry}\n"
-          f"api_timeout: {api_timeout}\n"
-          f"api_count: {api_count}\n"
-          f"message_history: {message_history}\n"
-          f"max_conversation: {max_conversation}\n"
-          f"max_characters: {max_characters}")
-
-    
     time.sleep(api_throttle)
-    
+    json_messages = json.dumps(messages)
     for attempt in range(retries):
         try:
             json_payload = json.dumps(
@@ -317,7 +228,7 @@ def query_bot(messages, retries=20):
             }
 
             botresponse = requests.request(
-                "POST", api_url, headers=headers, data=json_payload, timeout=api_timeout
+                "POST", api_url, headers=headers, data=json_payload, timeout=45
             )
             debug_log(f"Returned Response from OpenAI: {botresponse.status_code}")
             debug_log(botresponse)
@@ -499,92 +410,6 @@ def run_bash_shell_command(
 
 # endregion
 
-#region ### WINDOWS COMMANDS ###
-
-import subprocess
-
-def run_win_shell_command(
-    response, command_string, command_argument, current_task, next_task, goal_status
-):
-    process = subprocess.Popen(
-        command_argument,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        shell=True,
-        cwd=working_folder  # Set the working directory here
-    )
-
-    try:
-        # Set a timeout value (in seconds) for the command execution
-        timeout_value = 120
-        output, error = process.communicate(timeout=timeout_value)
-    except subprocess.TimeoutExpired:
-        process.kill()
-        set_global_success(False)
-        return create_json_message(
-            "Command execution timed out.",
-            command_string,
-            command_argument,
-            "I should research the error",
-            next_task,
-            goal_status,
-        )
-
-    return_code = process.returncode
-    debug_log(f"Return Code: {return_code}")
-
-    shell_response = ""
-
-    if "mkdir" in command_argument.lower():
-        if return_code == 0:
-            set_global_success(True)
-            shell_response = "Folder created successfully. " + command_argument
-        elif (
-            return_code == 1
-            and "Folder already exists navigate to folder." in error.decode("utf-8")
-        ):
-            set_global_success(True)
-            shell_response = (
-                "Folder already exists. Try switching to folder. " + command_argument
-            )
-        else:
-            shell_response = f"Error creating folder, research the error: {error.decode('utf-8').strip()}"
-
-    elif "echo" in command_argument.lower() and ">" in command_argument:
-        if return_code == 0:
-            set_global_success(True)
-            shell_response = "File created and saved successfully. " + command_argument
-        else:
-            set_global_success(False)
-            shell_response = f"Error creating file, Research the error: {error.decode('utf-8').strip()}"
-
-    else:
-        if return_code == 0:
-            set_global_success(True)
-            # Add slicing to limit output length
-            shell_response = (
-                "Shell Command Output: "
-                + f"{output.decode('utf-8').strip()}"[:max_characters]
-            )
-        else:
-            set_global_success(False)
-            # Add slicing to limit error length
-            shell_response = f"Shell Command failed, research the error: {error.decode('utf-8').strip()}"[
-                :max_characters
-            ]
-
-    debug_log(shell_response)
-    return create_json_message(
-        "Windows Command Output: " + shell_response,
-        command_string,
-        command_argument,
-        "I should analyze the output to ensure success and research any errors",
-        next_task,
-        goal_status,
-    )
-
-#endregion
-
 # region ### ALLOWS MODEL TO CONTINUE ###
 
 
@@ -763,7 +588,7 @@ def write_new_content_to_file(
         # Extract filename and content using regex
         regex_pattern = r'Filename:\s*(\S+)\s+Content:\s*"""(.*?)"""'
         match = re.search(regex_pattern, command_argument, re.DOTALL)
-        os.makedirs(working_folder, exist_ok=True)
+
         if match:
             filename = match.group(1)
             content = match.group(2)
@@ -963,8 +788,8 @@ def search_google(
 
         url = "https://www.googleapis.com/customsearch/v1"
         params = {
-            "key": google_api_key,
-            "cx": google_search_id,
+            "key": os.environ["GOOGLE_API_KEY"],
+            "cx": os.environ["CUSTOM_SEARCH_ENGINE_ID"],
             "q": query,
             "safe": "off",
             "num": 10,
@@ -1245,7 +1070,7 @@ def main_loop():
         print(colored("Goal: " + user_goal, "green"))
     set_global_success(True)
 
-    bot_send = openai_bot_handler(bot_prompt + user_goal, "go", "assistant")
+    bot_send = openai_bot_handler(bot_prompt + user_goal, "", "assistant")
 
     while True:
         num_input = input(
