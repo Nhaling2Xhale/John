@@ -29,18 +29,27 @@ if not os.path.exists(working_folder):
     os.makedirs(working_folder)
 
 # endregion
-
+global api_key
+global google_api_key
+global google_search_id
+global model
+global debug_code
+global api_count
+global api_throttle
+global api_retry
+global api_timeout
 # region ### GLOBAL FUNCTIONS ###
+model = None
 config_file = "config.json"
-current_version = "1.1.0"
+current_version = "1.1.1"
 update_url = "https://thelordg.com/version.txt"
 download_link = "https://github.com/Cytranics/LordGPT"
-
 success = True
 api_count = 0
 api_type = None
 message_history = []
 debug_code = False
+
 
 
 def debug_log(message):
@@ -76,9 +85,12 @@ def check_for_updates():
 check_for_updates()
 
 
+import os
+import sys
+import json
+
 def prompt_user_for_config():
-    global debug_code
-    global api_key
+
     api_key = input("Please enter your API key: ")
     google_api_key = input("Please enter your Google API key: ")
     google_search_id = input("Please enter your Google Search ID: ")
@@ -107,32 +119,42 @@ def prompt_user_for_config():
         'debug_code': debug_code
     }
 
+def load_config_from_file(config_file):
+    with open(config_file, 'r') as f:
+        config_data = json.load(f)
+    return config_data
+
+config_file = "config.json"
 
 if getattr(sys, 'frozen', False):
     print('Bundle Detected, asking user for variables.')
-    api_function = "OPENAI"
-    api_url = "https://api.openai.com/v1/chat/completions"
-    max_tokens = 800 
-    temperature = 0.8
-    frequency_penalty = 0.0
-    presence_penalty = 0.0
-    top_p = 1.0
-    local_memory_file = "memory.json"
-    debug_code = False
-    api_throttle = 10
-    api_retry = 10
-    api_timeout = 90
-    api_count = 0
-
+    
     if os.path.exists(config_file):
-        with open(config_file, 'r') as f:
-            config_data = json.load(f)
+        config_data = load_config_from_file(config_file)
     else:
         config_data = prompt_user_for_config()
         print("Configuration saved to config.json, edit the file to change additional settings")
 
         with open(config_file, 'w') as f:
             json.dump(config_data, f)
+
+    api_function = config_data.get("api_function", "OPENAI")
+    api_url = config_data.get("api_url", "https://api.openai.com/v1/chat/completions")
+    max_tokens = config_data.get("max_tokens", 800)
+    temperature = config_data.get("temperature", 0.8)
+    frequency_penalty = config_data.get("frequency_penalty", 0.0)
+    presence_penalty = config_data.get("presence_penalty", 0.0)
+    top_p = config_data.get("top_p", 0.0)
+    local_memory_file = config_data.get("local_memory_file", "memory.json")
+    debug_code = config_data.get("debug_code", False)
+    api_throttle = config_data.get("api_throttle", 10)
+    api_retry = config_data.get("api_retry", 10)
+    api_timeout = config_data.get("api_timeout", 90)
+    api_count = config_data.get("api_count", 0)
+    api_key = config_data.get("api_key")
+    google_api_key = config_data.get("google_api_key")
+    google_search_id = config_data.get("google_search_id")
+    model = config_data.get("model")
 else:
     debug_log('Not running from PyInstaller bundle')
 
@@ -151,17 +173,17 @@ else:
     google_search_id = os.environ["CUSTOM_SEARCH_ENGINE_ID"]
 #endregion
 
+
 # region ### FUNCTIONS ###
 max_conversation = int(os.environ.get('MAX_CONVERSATION', 6))
 max_characters = int(os.environ.get('MAX_CHARACTERS', 2000))
-
+api_count = 0
 def alternate_api(number):
     global api_count
+    global model
+    global api_type
     global api_url
     global api_key
-    global max_tokens
-    global api_type
-    global model
     if getattr(sys, 'frozen', False):
         return api_url, api_key, model, api_type
     else:
@@ -1306,7 +1328,7 @@ def main_loop():
         print(colored("Goal: " + user_goal, "green"))
     set_global_success(True)
 
-    bot_send = openai_bot_handler(bot_prompt + user_goal, "Replace [TASKLIST] with your detailed task list for the goal" + user_goal, "assistant")
+    bot_send = openai_bot_handler(bot_prompt + user_goal, f"""{{"response_120_words": "Respond with your detailed task list", "command_string": "[COMMAND]", "command_argument": "[ARGUMENT]", "current_task": "[CURRENT TASK]", "suggested_next_task": "[SUGGESTED NEXT TASK]"}}""" + user_goal, "assistant")
 
     while True:
         num_input = input(
