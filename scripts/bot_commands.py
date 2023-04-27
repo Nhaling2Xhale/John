@@ -18,7 +18,7 @@ botcommands = [
     {
         "command_string": "create_python_script",
         "command_argument": "Filename: [FILENAME] Content: ```[SCRIPT]```",
-        "command_description": "Write and save a non-interactive formatted python script as a multiline string using triple backticks (```). Replace '[FILENAME]' with filename.py and '[SCRIPT]' with the valid inner python script. Install missing modules."
+        "command_description": "Write and save a non-interactive formatted python script as a multiline string using triple backticks (```) that do not require API keys. Replace '[FILENAME]' with filename.py and '[SCRIPT]' with the valid inner python script. Install missing modules."
     },
     {
         "command_string": "write_new_content_to_file",
@@ -71,5 +71,3 @@ botcommands = [
         "command_description": "Use this command only after the entire goal has been verified and completed 100%."
     },
 ]
-
-
