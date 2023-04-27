@@ -25,7 +25,7 @@ import urllib.request
 from scripts.bot_prompts import command_list, bot_prompt
 from scripts.bot_commands import botcommands
 from playwright.sync_api import sync_playwright
-
+#endregion
 
 current_path = os.getcwd()
 working_folder = os.path.join(current_path, 'LordGPT_folder')
@@ -300,7 +300,7 @@ text_color_dict = {
 def query_bot(messages, retries=api_retry):
         random_text, random_color = get_random_text_and_color(text_color_dict)
         alternate_api(api_count)    
-        time.sleep(api_throttle)
+        time.sleep(api_throttle) #type: ignore
         debug_log("Model: ", model)
         debug_log("API Key:", api_key)
         debug_log("Google API Key:", google_api_key)
@@ -323,7 +323,7 @@ def query_bot(messages, retries=api_retry):
         debug_log("Top P:", top_p)
         
         with yaspin(text=random_text, color=random_color) as spinner:
-            for attempt in range(retries):
+            for attempt in range(retries): #type: ignore
                 try:
                     
                     json_payload = json.dumps(
@@ -365,7 +365,7 @@ def query_bot(messages, retries=api_retry):
                         
 
                         #BRIGHT DATA REQUEST                
-                        request = opener.open(req, timeout=api_timeout)
+                        request = opener.open(req, timeout=api_timeout) #type: ignore
                         
                         uresponse = request.read()
                         
@@ -377,7 +377,7 @@ def query_bot(messages, retries=api_retry):
                     else:
                         #STANDARD API REQUEST
                         
-                        botresponse = requests.request("POST", api_url, headers=headers, data=json_payload, timeout=api_timeout)
+                        botresponse = requests.request("POST", api_url, headers=headers, data=json_payload, timeout=api_timeout) #type: ignore
                         
                         response_json = botresponse.json()
                         
@@ -428,7 +428,7 @@ def query_bot(messages, retries=api_retry):
                             )
         
                 except Exception as e:
-                    if attempt < retries - 1:
+                    if attempt < retries - 1: #type: ignore
                         print(f"API Exception: {str(e)}...Retrying...")
                         alternate_api(api_count)
                         time.sleep(2**attempt)
@@ -1164,7 +1164,6 @@ def search_google(
 
 # region ### BROWSE WEBSITE ###
 
-
 def sanitize_content(content):
     content = unidecode(content)
     content = content.encode("ascii", "ignore").decode("ascii")
@@ -1195,14 +1194,15 @@ def browse_website_url(reasoning, command_string, command_argument, current_task
         )
 
     serialized_html = json.dumps(result)
+    sanitized_html = sanitize_content(serialized_html)
 
-    if max_characters is not None and len(serialized_html) > max_characters:
-        serialized_html = serialized_html[:max_characters]
-        website_content = json.loads(serialized_html)
-        debug_log(website_content)
+    if max_characters is not None and len(sanitized_html) > max_characters: #type: ignore
+        sanitized_html = sanitized_html[:max_characters]
+       
+        debug_log(sanitized_html)
 
     return create_json_message(
-        "Website Content: " + website_content,
+        "Website Content: " + sanitized_html, #type: ignore
         command_string,
         command_argument,
         current_task,
@@ -1246,7 +1246,7 @@ def message_handler(current_prompt, message, role):
             )
 
     def limit_message_history():
-        while len(message_history) > max_conversation + 1:
+        while len(message_history) > max_conversation + 1: #type: ignore
             message_history.pop(2)
 
 
