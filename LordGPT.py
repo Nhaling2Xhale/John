@@ -23,6 +23,7 @@ import urllib.request
 
 from scripts.bot_prompts import command_list, bot_prompt
 from scripts.bot_commands import botcommands
+from playwright.sync_api import sync_playwright
 
 
 current_path = os.getcwd()
@@ -30,10 +31,11 @@ working_folder = os.path.join(current_path, 'LordGPT_folder')
 if not os.path.exists(working_folder):
     os.makedirs(working_folder)
 
+
 # endregion
 # region ### GLOBAL FUNCTIONS ###
 config_file = "config.json"
-current_version = "1.1.5"
+current_version = "1.1.6"
 update_url = "https://thelordg.com/downloads/version.txt"
 changelog_url = "https://thelordg.com/downloads/changelog.txt"
 download_link = "https://thelordg.com/downloads/LordGPT.exe"
@@ -48,7 +50,7 @@ def debug_log(message, value=None):
         with open(debug_file_path, "a") as debug_file:
             debug_file.write(f"{message}{value}\n")
 
-
+    
 def set_global_success(value):
     global success
     success = value
@@ -245,14 +247,14 @@ def create_json_message(
     command_string="[COMMAND]",
     command_argument="[ARGUMENT]",
     current_task="[CURRENT TASK]",
-    suggested_next_task="[SUGGESTED NEXT TASK]",
+    self_prompt_action="[SUGGESTED NEXT TASK]",
 ):
     json_message = {
         "reasoning_80_words": reasoning_80_words,
         "command_string": command_string,
         "command_argument": command_argument,
         "current_task": current_task,
-        "suggested_next_task": suggested_next_task,
+        "self_prompt_action": self_prompt_action,
     }
     return json.dumps(json_message)
 
@@ -280,123 +282,141 @@ def get_random_user_agent():
 
 
 def query_bot(messages, retries=api_retry):
-    alternate_api(api_count)    
-    time.sleep(api_throttle)
-    debug_log("Model: ", model)
-    debug_log("API Key:", api_key)
-    debug_log("Google API Key:", google_api_key)
-    debug_log("Google Search ID:", google_search_id)
-    debug_log("API Function:", api_function)
-    debug_log("API Retry:", api_retry)
-    debug_log("API Throttle:", api_throttle)
-    debug_log("API Timeout:", api_timeout)
-    debug_log("BD Enabled:", bd_enabled)
-    debug_log("BD Password:", bd_password)
-    debug_log("BD Port:", bd_port)
-    debug_log("BD Username:", bd_username)
-    debug_log("Debug Code:", debug_code)
-    debug_log("Frequency Penalty:", frequency_penalty)
-    debug_log("Max Characters:", max_characters)
-    debug_log("Max Conversation:", max_conversation)
-    debug_log("Max Tokens:", max_tokens)
-    debug_log("Presence Penalty:", presence_penalty)
-    debug_log("Temperature:", temperature)
-    debug_log("Top P:", top_p)
+
+        alternate_api(api_count)    
+        time.sleep(api_throttle)
+        debug_log("Model: ", model)
+        debug_log("API Key:", api_key)
+        debug_log("Google API Key:", google_api_key)
+        debug_log("Google Search ID:", google_search_id)
+        debug_log("API Function:", api_function)
+        debug_log("API Retry:", api_retry)
+        debug_log("API Throttle:", api_throttle)
+        debug_log("API Timeout:", api_timeout)
+        debug_log("BD Enabled:", bd_enabled)
+        debug_log("BD Password:", bd_password)
+        debug_log("BD Port:", bd_port)
+        debug_log("BD Username:", bd_username)
+        debug_log("Debug Code:", debug_code)
+        debug_log("Frequency Penalty:", frequency_penalty)
+        debug_log("Max Characters:", max_characters)
+        debug_log("Max Conversation:", max_conversation)
+        debug_log("Max Tokens:", max_tokens)
+        debug_log("Presence Penalty:", presence_penalty)
+        debug_log("Temperature:", temperature)
+        debug_log("Top P:", top_p)
         
-    for attempt in range(retries):
-        try:
-            json_payload = json.dumps(
-                {
-                    "model": model,
-                    "messages": messages,
-                    "max_tokens": max_tokens,
-                    "temperature": temperature,
-                    "top_p": top_p,
-                    "frequency_penalty": presence_penalty,
-                    "presence_penalty": presence_penalty,
-                }
-            )
-            debug_log("JSON Payload: ", json_payload)
-            headers = {
-                "api-key": api_key,
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {api_key}",
-            }
-            
-            # BRIGHT DATA PROXY
-            if bd_enabled:
+        for attempt in range(retries):
+            try:
                 
-                json_utf8 = json_payload.encode('utf-8')
-                session_id = random.random()
-                super_proxy_url = ('http://%s-session-%s:%s@zproxy.lum-superproxy.io:%d' %
-                               (bd_username, session_id, bd_password, bd_port))
-                proxy_handler = urllib.request.ProxyHandler({
-                    'http': super_proxy_url,
-                    'https': super_proxy_url,
-            })
-                ssl._create_default_https_context = ssl._create_unverified_context
-                opener = urllib.request.build_opener(proxy_handler)
-                req = urllib.request.Request(
-                    api_url, data=json_utf8, headers=headers)  # type: ignore
+                json_payload = json.dumps(
+                    {
+                        "model": model,
+                        "messages": messages,
+                        "max_tokens": max_tokens,
+                        "temperature": temperature,
+                        "top_p": top_p,
+                        "frequency_penalty": presence_penalty,
+                        "presence_penalty": presence_penalty,
+                    }
+                )
+                
+                debug_log("JSON Payload: ", json_payload)
+                headers = {
+                    "api-key": api_key,
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {api_key}",
+                }
+                
+                # BRIGHT DATA PROXY
+                if bd_enabled:
+                    
+                    json_utf8 = json_payload.encode('utf-8')
+                    session_id = random.random()
+                    super_proxy_url = ('http://%s-session-%s:%s@zproxy.lum-superproxy.io:%d' %
+                                (bd_username, session_id, bd_password, bd_port))
+                    proxy_handler = urllib.request.ProxyHandler({
+                        'http': super_proxy_url,
+                        'https': super_proxy_url,
+                })
+                    
+                    ssl._create_default_https_context = ssl._create_unverified_context
+                    opener = urllib.request.build_opener(proxy_handler)
+                    
+                    req = urllib.request.Request(
+                        api_url, data=json_utf8, headers=headers)  # type: ignore
+                    
 
-                #BRIGHT DATA REQUEST                
-                request = opener.open(req, timeout=api_timeout)
-                uresponse = request.read()
-                utfresponse = uresponse.decode('utf-8')
-                botresponse = json.loads(utfresponse)
-                response_json = botresponse
-                debug_log("Bot reply: ", botresponse)
-            else:
-                #STANDARD API REQUEST
-                botresponse = requests.request("POST", api_url, headers=headers, data=json_payload, timeout=api_timeout)
-                response_json = botresponse.json()
-            debug_log("Bot reply: ", botresponse)
-            
-            # Handling error response
-            
-            if "error" in response_json:
-                error_message = response_json["error"]["message"]
-                print(f"Error: {error_message}")
-                print("max_tokens is too high.....GPT3.5 is limited, so change max_tokens to a lower value.")
-                continue
-        
-
-            responseparsed = response_json["choices"][0]["message"]["content"]
-            debug_log(f"Parsed Choices Node: {responseparsed}")
-            responseformatted = json.loads(responseparsed)
-
-            if responseformatted is not None:
-                if "current_task" in responseformatted:
-                    current_task = responseformatted["current_task"]
-                    reasoning = responseformatted["reasoning_80_words"]
-                    command_string = responseformatted["command_string"]
-                    command_argument = responseformatted["command_argument"]
-                    suggested_next_task = responseformatted["suggested_next_task"]
-
-                    return (
-                        reasoning,
-                        command_string,
-                        command_argument,
-                        current_task,
-                        suggested_next_task,
-                    )
+                    #BRIGHT DATA REQUEST                
+                    request = opener.open(req, timeout=api_timeout)
+                    
+                    uresponse = request.read()
+                    
+                    utfresponse = uresponse.decode('utf-8')
+                    botresponse = json.loads(utfresponse)
+                    response_json = botresponse
+                    
+                    debug_log("Bot reply: ", botresponse)
                 else:
+                    #STANDARD API REQUEST
+                    
+                    botresponse = requests.request("POST", api_url, headers=headers, data=json_payload, timeout=api_timeout)
+                    
+                    response_json = botresponse.json()
+                    
+                debug_log("Bot reply: ", botresponse)
+                
+                # Handling error response
+                
+                if "error" in response_json:
+                    error_message = response_json["error"]["message"]
+                    print(f"Error: {error_message}")
+                    print("max_tokens is too high.....GPT3.5 is limited, so change max_tokens to a lower value.")
+                    continue
+            
+            
+                responseparsed = response_json["choices"][0]["message"]["content"]
+                
+                debug_log(f"Parsed Choices Node: {responseparsed}")
+                responseformatted = json.loads(responseparsed)
+                
+        
+                if responseformatted is not None:
+                    if "current_task" in responseformatted:
+                        current_task = responseformatted["current_task"]
+                        reasoning = responseformatted["reasoning_80_words"]
+                        command_string = responseformatted["command_string"]
+                        command_argument = responseformatted["command_argument"]
+                        self_prompt_action = responseformatted["self_prompt_action"]
+                        
+                        
+                        return (
+                            reasoning,
+                            command_string,
+                            command_argument,
+                            current_task,
+                            self_prompt_action,
+                        )
+                        
+                    else:
+                        
+                        alternate_api(api_count)
+                        return (
+                            "No valid json, ensure you format your responses as the required json",
+                            "None",
+                            "None",
+                            "Reformat reply as json",
+                            "Continue where you left off",
+                            "Unknown",
+                        )
+     
+            except Exception as e:
+                if attempt < retries - 1:
+                    print(f"API Exception: {str(e)}...Retrying...")
                     alternate_api(api_count)
-                    return (
-                        "No valid json, ensure you format your responses as the required json",
-                        "None",
-                        "None",
-                        "Reformat reply as json",
-                        "Continue where you left off",
-                        "Unknown",
-                    )
-        except Exception as e:
-            if attempt < retries - 1:
-                print(f"API Exception: {str(e)}...Retrying...")
-                alternate_api(api_count)
-                time.sleep(2**attempt)
-            else:
-                raise e
+                    time.sleep(2**attempt)
+                else:
+                    raise e
         
 
 
@@ -407,10 +427,7 @@ def query_bot(messages, retries=api_retry):
 # region ### GENERATE PDF ###
 
 
-import re
-import pdfkit
-
-def create_pdf_from_html_markup(reasoning, command_string, command_argument, current_task, suggested_next_task):
+def convert_html_to_pdf(reasoning, command_string, command_argument, current_task, self_prompt_action):
     try:
         # Extract content between triple backticks
         content_match = re.search(r'```(.*?)```', command_argument, re.DOTALL)
@@ -469,7 +486,7 @@ def create_pdf_from_html_markup(reasoning, command_string, command_argument, cur
 # region ### SHELL COMMANDS ###
 
 def run_bash_shell_command(
-    reasoning, command_string, command_argument, current_task, suggested_next_task
+    reasoning, command_string, command_argument, current_task, self_prompt_action
 ):
     process = subprocess.Popen(
         command_argument,
@@ -491,7 +508,7 @@ def run_bash_shell_command(
             command_string,
             command_argument,
             "I should research the error",
-            suggested_next_task,
+            self_prompt_action,
             
         )
 
@@ -544,7 +561,7 @@ def run_bash_shell_command(
         command_string,
         command_argument,
         "I should analyze the output to ensure success and research any errors",
-        suggested_next_task,
+        self_prompt_action,
         
     )
 
@@ -553,10 +570,8 @@ def run_bash_shell_command(
 
 #region ### WINDOWS COMMANDS ###
 
-import subprocess
-
 def run_win_shell_command(
-    reasoning, command_string, command_argument, current_task, suggested_next_task
+    reasoning, command_string, command_argument, current_task, self_prompt_action
 ):
     process = subprocess.Popen(
         command_argument,
@@ -578,7 +593,7 @@ def run_win_shell_command(
             command_string,
             command_argument,
             "I should research the error",
-            suggested_next_task,
+            self_prompt_action,
             
         )
 
@@ -631,7 +646,7 @@ def run_win_shell_command(
         command_string,
         command_argument,
         "I should analyze the output to ensure success and research any errors",
-        suggested_next_task,
+        self_prompt_action,
         
     )
 
@@ -641,13 +656,13 @@ def run_win_shell_command(
 
 
 def no_command(
-    reasoning, command_string, command_argument, current_task, suggested_next_task
+    reasoning, command_string, command_argument, current_task, self_prompt_action
 ):
     response_string = json.dumps(command_argument)
     set_global_success(True)
     debug_log(f"reply String: {response_string}")
     return create_json_message(
-        reasoning, command_string, command_argument, current_task, suggested_next_task
+        reasoning, command_string, command_argument, current_task, self_prompt_action
     )
 
 
@@ -656,7 +671,7 @@ def no_command(
 # region ### SAVE RESEARCH ###
 
 
-def save_research(reasoning, command_string, command_argument, current_task, suggested_next_task):
+def save_research(reasoning, command_string, command_argument, current_task, self_prompt_action):
     # Get the current datetime
     current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -675,7 +690,7 @@ def save_research(reasoning, command_string, command_argument, current_task, sug
             command_string,
             command_argument,
             current_task,
-            suggested_next_task,
+            self_prompt_action,
         )
 
     return create_json_message(
@@ -683,14 +698,14 @@ def save_research(reasoning, command_string, command_argument, current_task, sug
         command_string,
         command_argument,
         current_task,
-        suggested_next_task,
+        self_prompt_action,
     )
 # endregion
 
 # region ### FETCH RESEARCH ###
 
 
-def fetch_research(reasoning, command_string, command_argument, current_task, suggested_next_task):
+def fetch_research(reasoning, command_string, command_argument, current_task, self_prompt_action):
     # Fetch the research.txt file from the working_folder
     research_file_path = os.path.join(working_folder, "research.txt")
 
@@ -703,7 +718,7 @@ def fetch_research(reasoning, command_string, command_argument, current_task, su
             command_string,
             command_argument,
             current_task,
-            suggested_next_task,
+            self_prompt_action,
         )
         
     return create_json_message(
@@ -711,7 +726,7 @@ def fetch_research(reasoning, command_string, command_argument, current_task, su
         command_string,
         command_argument,
         current_task,
-        suggested_next_task,
+        self_prompt_action,
     )
 # endregion
 
@@ -720,7 +735,7 @@ def fetch_research(reasoning, command_string, command_argument, current_task, su
 
 
 def create_task_list(
-    reasoning, command_string, command_argument, current_task, suggested_next_task
+    reasoning, command_string, command_argument, current_task, self_prompt_action
 ):
     if command_argument is not None:
         message_handler(None, command_argument, "task")
@@ -729,7 +744,7 @@ def create_task_list(
         command_string,
         command_argument,
         current_task,
-        suggested_next_task,
+        self_prompt_action,
         
     )
 
@@ -739,7 +754,7 @@ def create_task_list(
 # region ### CREATE PYTHON SCRIPT ###
 
 def create_python_script(
-    reasoning, command_string, command_argument, current_task, suggested_next_task
+    reasoning, command_string, command_argument, current_task, self_prompt_action
 ):
     try:
         filename = None
@@ -776,7 +791,7 @@ def create_python_script(
             command_string,
             command_argument,
             current_task,
-            suggested_next_task,
+            self_prompt_action,
             
         )
 
@@ -798,7 +813,7 @@ def create_python_script(
 
 
 def write_new_content_to_file(
-    reasoning, command_string, command_argument, current_task, suggested_next_task
+    reasoning, command_string, command_argument, current_task, self_prompt_action
 ):
     try:
         filename = None
@@ -837,7 +852,7 @@ def write_new_content_to_file(
             command_string,
             command_argument,
             current_task,
-            suggested_next_task,
+            self_prompt_action,
             
         )
 
@@ -849,7 +864,7 @@ def write_new_content_to_file(
             command_string,
             command_argument,
             "Retry or Reserch Current Task",
-            suggested_next_task,
+            self_prompt_action,
             
         )
 
@@ -859,7 +874,7 @@ def write_new_content_to_file(
 # region ## APPEND CONTENT TO FILE ##
 
 def append_content_to_existing_file(
-    reasoning, command_string, command_argument, current_task, suggested_next_task
+    reasoning, command_string, command_argument, current_task, self_prompt_action
 ):
     try:
         # Extract filename and content using regex
@@ -893,7 +908,7 @@ def append_content_to_existing_file(
             command_string,
             command_argument,
             current_task,
-            suggested_next_task,
+            self_prompt_action,
             
         )
     except Exception as e:
@@ -904,7 +919,7 @@ def append_content_to_existing_file(
             command_string,
             command_argument,
             "Retry or Reserch Current Task",
-            suggested_next_task,
+            self_prompt_action,
             
         )
 
@@ -915,7 +930,7 @@ def append_content_to_existing_file(
 
 
 def read_content_from_file(
-    reasoning, command_string, command_argument, current_task, suggested_next_task
+    reasoning, command_string, command_argument, current_task, self_prompt_action
 ):
     try:
         filename = None
@@ -966,7 +981,7 @@ def read_content_from_file(
             command_string,
             command_argument,
             current_task,
-            suggested_next_task,
+            self_prompt_action,
             
         )
     except Exception as e:
@@ -985,7 +1000,7 @@ def read_content_from_file(
 # endregion
 
 #region ### DOWNLOAD FILES ###
-def download_file(reasoning, command_string, command_argument, current_task, suggested_next_task):
+def download_file(reasoning, command_string, command_argument, current_task, self_prompt_action):
     if not os.path.exists(working_folder):
         os.makedirs(working_folder)
 
@@ -1007,7 +1022,7 @@ def download_file(reasoning, command_string, command_argument, current_task, sug
             command_string,
             command_argument,
             current_task,
-            suggested_next_task,
+            self_prompt_action,
             
         )
         else:
@@ -1016,7 +1031,7 @@ def download_file(reasoning, command_string, command_argument, current_task, sug
             command_string,
             command_argument,
             current_task,
-            suggested_next_task,
+            self_prompt_action,
             
         )
 
@@ -1026,7 +1041,7 @@ def download_file(reasoning, command_string, command_argument, current_task, sug
             command_string,
             command_argument,
             current_task,
-            suggested_next_task,
+            self_prompt_action,
             
         )
 
@@ -1036,7 +1051,7 @@ def download_file(reasoning, command_string, command_argument, current_task, sug
 
 
 def search_google(
-    reasoning, command_string, command_argument, current_task, suggested_next_task
+    reasoning, command_string, command_argument, current_task, self_prompt_action
 ):
     try:
         args = command_argument.split("|")
@@ -1112,7 +1127,7 @@ def search_google(
             command_string,
             command_argument,
             current_task,
-            suggested_next_task,
+            self_prompt_action,
             
         )
     except Exception as e:
@@ -1192,7 +1207,7 @@ def scrape_website_url(reasoning, command_string, command_argument, current_task
 
 
 def mission_accomplished(
-    reasoning, command_string, command_argument, current_task, suggested_next_task
+    reasoning, command_string, command_argument, current_task, self_prompt_action
 ):
     set_global_success(True)
     print("Mission accomplished:", command_argument)
@@ -1249,7 +1264,7 @@ def message_handler(current_prompt, message, role):
 
 
 def command_handler(
-    reasoning, command_string, command_argument, current_task, suggested_next_task
+    reasoning, command_string, command_argument, current_task, self_prompt_action
 ):
     if not command_string:  # Check if the command_string is empty or None
         return create_json_message(
@@ -1273,7 +1288,7 @@ def command_handler(
             + create_json_message(),
         )
     return function(
-        reasoning, command_string, command_argument, current_task, suggested_next_task
+        reasoning, command_string, command_argument, current_task, self_prompt_action
     )
 
 
@@ -1314,37 +1329,30 @@ def bbs_ascii_lordgpt():
 #endregion
 
 
-def openai_bot_handler(current_prompt, message, role):
-    messages = message_handler(current_prompt, message, role)
-    (
-        reasoning,
-        command_string,
-        command_argument,
-        current_task,
-        suggested_next_task,
+def openai_bot_handler(current_prompt, message, role): 
+   
+        messages = message_handler(current_prompt, message, role)
+        (reasoning, command_string, command_argument, current_task, self_prompt_action) = query_bot(messages)      
+
         
-    ) = query_bot(
-        messages
-    )  # type: ignore
+        print(colored("LordGPT Thoughts: ", color="green"), end="")
+        typing_print(str(reasoning))
+        print(colored("Currently :       ", color="blue"), end="")
+        typing_print(str(current_task) + "")
+        print(colored("Next Task:        ", color="magenta"), end="")
+        typing_print(str(self_prompt_action) + "")
+        print(colored("Executing CMD:    ", color="red"), end="")
+        typing_print(str(command_string))
+        print(colored("CMD Argument:     ", color="red"), end="")
+        typing_print(str(command_argument) + "\n\n")
+        handler_response = command_handler(
+            reasoning, command_string, command_argument, current_task, self_prompt_action
+        ) 
 
-    print(colored("LordGPT Thoughts: ", color="green"), end="")
-    typing_print(str(reasoning))
-    print(colored("Currently :       ", color="blue"), end="")
-    typing_print(str(current_task) + "")
-    print(colored("Next Task:        ", color="magenta"), end="")
-    typing_print(str(suggested_next_task) + "")
-    print(colored("Executing CMD:    ", color="red"), end="")
-    typing_print(str(command_string))
-    print(colored("CMD Argument:     ", color="red"), end="")
-    typing_print(str(command_argument) + "\n\n")
+        if success == True:
 
-    handler_response = command_handler(
-        reasoning, command_string, command_argument, current_task, suggested_next_task
-    )
-
-    if success == True:
+            return handler_response
         return handler_response
-    return handler_response
 
 
 # endregion
@@ -1353,7 +1361,7 @@ def openai_bot_handler(current_prompt, message, role):
 
 
 def main_loop():
-    # Ask the user for the goal of the bot
+
     print(colored("Tips: ", "green"))
 
 
@@ -1373,7 +1381,8 @@ def main_loop():
         print(colored("Goal: " + user_goal, "green"))
     set_global_success(True)
 
-    bot_send = openai_bot_handler(bot_prompt + user_goal, f"""{{"reasoning_80_words": "Respond with your detailed task list for the goal using using the required json format", "command_string": "[COMMAND]", "command_argument": "[ARGUMENT]", "current_task": "[CURRENT TASK]", "suggested_next_task": "[SUGGESTED NEXT TASK]"}}""", "assistant")
+    bot_send = openai_bot_handler(bot_prompt + user_goal, f"""{{"reasoning_80_words": "Respond with your detailed task list for the goal using using the required json format", "command_string": "[COMMAND]", "command_argument": "[ARGUMENT]", "current_task": "[CURRENT TASK]", "self_prompt_action": "[SUGGESTED NEXT TASK]"}}""", "assistant")
+
 
     while True:
         num_input = input(

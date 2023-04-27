@@ -10,3 +10,6 @@ unidecode
 urllib
 requests
 python-dotenv
+playwright
+asyncio
+alive_progress
