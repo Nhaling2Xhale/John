@@ -259,14 +259,14 @@ def remove_brackets(text):
 
 # Create JSON message function
 def create_json_message(
-    response_120_words="[DETAILED RESPONSE]",
+    reasoning_180_words="[DETAILED RESPONSE]",
     command_string="[COMMAND]",
     command_argument="[ARGUMENT]",
     current_task="[CURRENT TASK]",
     suggested_next_task="[SUGGESTED NEXT TASK]",
 ):
     json_message = {
-        "response_120_words": response_120_words,
+        "reasoning_180_words": reasoning_180_words,
         "command_string": command_string,
         "command_argument": command_argument,
         "current_task": current_task,
@@ -365,7 +365,7 @@ def query_bot(messages, retries=api_retry):
             if responseformatted is not None:
                 if "current_task" in responseformatted:
                     current_task = responseformatted["current_task"]
-                    response = responseformatted["response_120_words"]
+                    response = responseformatted["reasoning_180_words"]
                     command_string = responseformatted["command_string"]
                     command_argument = responseformatted["command_argument"]
                     suggested_next_task = responseformatted["suggested_next_task"]
@@ -404,13 +404,27 @@ def query_bot(messages, retries=api_retry):
 # region ### GENERATE PDF ###
 
 
-def create_pdf_from_html_markup(
-    response, command_string, command_argument, current_task, suggested_next_task
-):
+import re
+import pdfkit
+
+def create_pdf_from_html_markup(response, command_string, command_argument, current_task, suggested_next_task):
     try:
+        # Extract content between triple backticks
+        content_match = re.search(r'```(.*?)```', command_argument, re.DOTALL)
+        if not content_match:
+            return create_json_message(
+                "Error: Couldn't find content between triple backticks",
+                command_string,
+                command_argument,
+                current_task,
+                "Google Error",
+            )
+
+        content = content_match.group(1).strip()
+
         # Parse the input string to extract the filename and content
         parts = command_argument.split("Content:")
-        filename_part, content = parts[0].strip(), parts[1].strip()
+        filename_part = parts[0].strip()
         filename = filename_part.replace("Filename:", "").strip()
 
         # Concatenate the working_folder path with the filename
@@ -435,7 +449,6 @@ def create_pdf_from_html_markup(
             command_argument,
             current_task,
             "Determine next task",
-            
         )
     except Exception as e:
         debug_log(f"Error: {e}")
@@ -445,8 +458,8 @@ def create_pdf_from_html_markup(
             command_argument,
             current_task,
             "Google Error",
-            
         )
+
 
 # endregion
 
@@ -639,62 +652,56 @@ def no_command(
 
 # region ### SAVE RESEARCH ###
 
+
 def save_research(response, command_string, command_argument, current_task, suggested_next_task):
+    # Get the current datetime
+    current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    # Create the research entry with the datetime and content
+    research_entry = f"DateTime: {current_time}\nContent: {command_argument.strip()}\n\n"
+
+    # Save the research to a text file
+    research_file_path = os.path.join(working_folder, "research.txt")
+
     try:
-        # Split the command argument into title and content
-        title = command_argument.split("Title: ")[1].split(" ResearchContent: ")[0]
-        content = command_argument.split("Title: ")[1].split(" ResearchContent: ")[1]
-    except IndexError:
+        with open(research_file_path, "a") as f:
+            f.write(research_entry)
+    except FileNotFoundError:
         return create_json_message(
-            "Error: Invalid format! Please use 'Title: <title> ResearchContent: <content>'.",
+            "Failed to save research, the file doesn't exist.",
             command_string,
             command_argument,
             current_task,
             suggested_next_task,
-            
         )
 
-    # Get the current datetime
-    current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-    # Create a dictionary with the title, content, and datetime
-    research = {"DateTime": current_time, "Title": title, "ResearchContent": content}
-
-    # Save the research to a JSON node
-    research_file_path = os.path.join(working_folder, "research.json")
-    with open(research_file_path, "a") as f:
-        f.write(json.dumps(research))
-        f.write("\n")
-    
     return create_json_message(
         "Research saved successfully",
         command_string,
         command_argument,
         current_task,
         suggested_next_task,
-        
     )
-
-
-
 # endregion
 
 # region ### FETCH RESEARCH ###
 
 
 def fetch_research(response, command_string, command_argument, current_task, suggested_next_task):
-    research_list = []
-    
-    # Fetch the research.json file from the working_folder
-    research_file_path = os.path.join(working_folder, "research.json")
-    with open(research_file_path, "r") as f:
-        for line in f:
-            research = json.loads(line)
-            research_list.append(research)
-            
-    formatted_research = ""
-    for research in research_list:
-        formatted_research += f'DateTime: {research["DateTime"]}\nTitle: {research["Title"]}\nResearchContent: {research["ResearchContent"]}\n\n'
+    # Fetch the research.txt file from the working_folder
+    research_file_path = os.path.join(working_folder, "research.txt")
+
+    try:
+        with open(research_file_path, "r") as f:
+            formatted_research = f.read()
+    except FileNotFoundError:
+        return create_json_message(
+            "Failed to fetch research data, the file doesn't exist.",
+            command_string,
+            command_argument,
+            current_task,
+            suggested_next_task,
+        )
         
     return create_json_message(
         formatted_research,
@@ -702,11 +709,7 @@ def fetch_research(response, command_string, command_argument, current_task, sug
         command_argument,
         current_task,
         suggested_next_task,
-        
     )
-
-
-
 # endregion
 
 # region ### CREATE TASK LIST ###
@@ -1367,7 +1370,7 @@ def main_loop():
         print(colored("Goal: " + user_goal, "green"))
     set_global_success(True)
 
-    bot_send = openai_bot_handler(bot_prompt + user_goal, f"""{{"response_120_words": "Respond with your detailed task list using using the required json format", "command_string": "[COMMAND]", "command_argument": "[ARGUMENT]", "current_task": "[CURRENT TASK]", "suggested_next_task": "[SUGGESTED NEXT TASK]"}}""" + user_goal, "assistant")
+    bot_send = openai_bot_handler(bot_prompt + user_goal, f"""{{"reasoning_180_words": "Respond with your detailed task list using using the required json format", "command_string": "[COMMAND]", "command_argument": "[ARGUMENT]", "current_task": "[CURRENT TASK]", "suggested_next_task": "[SUGGESTED NEXT TASK]"}}""" + user_goal, "assistant")
 
     while True:
         num_input = input(
