@@ -24,7 +24,6 @@ import urllib.request
 
 from scripts.bot_prompts import command_list, bot_prompt
 from scripts.bot_commands import botcommands
-from playwright.sync_api import sync_playwright
 
 
 current_path = os.getcwd()
