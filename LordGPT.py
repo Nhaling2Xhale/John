@@ -1198,9 +1198,11 @@ def browse_website_url(reasoning, command_string, command_argument, current_task
 
     if max_characters is not None and len(serialized_html) > max_characters:
         serialized_html = serialized_html[:max_characters]
+        website_content = json.loads(serialized_html)
+        debug_log(website_content)
 
     return create_json_message(
-        "Website Content: " + serialized_html,
+        "Website Content: " + website_content,
         command_string,
         command_argument,
         current_task,
