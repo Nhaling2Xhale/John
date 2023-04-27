@@ -33,7 +33,7 @@ if not os.path.exists(working_folder):
 
 
 # endregion
-# region ### GLOBAL FUNCTIONS ###
+# region ### GLOBAL FUNCTIONS. ###
 config_file = "config.json"
 current_version = "1.1.6"
 update_url = "https://thelordg.com/downloads/version.txt"
