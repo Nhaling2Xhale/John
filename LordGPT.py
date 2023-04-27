@@ -25,7 +25,7 @@ import urllib.request
 from scripts.bot_prompts import command_list, bot_prompt
 from scripts.bot_commands import botcommands
 
-load_dotenv(override=True)
+
 current_path = os.getcwd()
 working_folder = os.path.join(current_path, 'LordGPT_folder')
 if not os.path.exists(working_folder):
@@ -41,13 +41,14 @@ global api_count
 global api_throttle
 global api_retry
 global api_timeout
+global max_conversation
 # region ### GLOBAL FUNCTIONS ###
 model = None
 config_file = "config.json"
-current_version = "1.1.4"
+current_version = "1.1.5"
 update_url = "https://thelordg.com/downloads/version.txt"
 changelog_url = "https://thelordg.com/downloads/changelog.txt"
-download_link = "https://github.com/Cytranics/LordGPT"
+download_link = "https://thelordg.com/downloads/LordGPT.exe"
 success = True
 api_count = 0
 api_type = None
@@ -67,11 +68,9 @@ def debug_log(message):
         with open(debug_file_path, "a") as debug_file:
             debug_file.write(f"{message}\n")
 
-
 def set_global_success(value):
     global success
     success = value
-
 
 def check_for_updates():
     try:
@@ -81,7 +80,7 @@ def check_for_updates():
 
         if latest_version != current_version:
             print(colored(
-                f"A new version ({latest_version}) is available! Please visit {download_link} to download the update. Check the README.md for changes.", "red"))
+                f"A new version ({latest_version}) is available! Please visit {download_link} to download the update. Github: https://github.com/Cytranics/LordGPT", "red"))
 
             # Fetch the changelog
             changelog_response = requests.get(changelog_url)
@@ -94,14 +93,10 @@ def check_for_updates():
 
     except requests.exceptions.RequestException as e:
         print("Error checking for updates:", e)
-
-
-
 check_for_updates()
 
 def prompt_user_for_config():
-
-    api_key = input("Please enter your API key: ")
+    api_key = input("Please enter your OPENAI API key: ")
     google_api_key = input("Please enter your Google API key: ")
     google_search_id = input("Please enter your Google Search ID: ")
 
@@ -119,129 +114,134 @@ def prompt_user_for_config():
         else:
             print("Invalid selection. Please enter 1 or 2.")
 
-    debug_code = int(input("Enable debug mode (1 for Enable, 2 for Disable): ")) == 1
+    debug_code = int(
+        input("Enable debug mode (1 for Enable, 2 for Disable): ")) == 1
 
     return {
-        'api_key': api_key,
-        'model': model,
-        'google_api_key': google_api_key,
-        'google_search_id': google_search_id,
-        'debug_code': debug_code
+        'API_FUNCTION': "OPENAI",
+        'API_RETRY': 10,
+        'API_THROTTLE': 10,
+        'API_TIMEOUT': 90,
+        'AZURE_URL': None,
+        'AZURE_API_KEY': None,
+        'AZURE_MODEL_NAME': None,
+        'BD_ENABLED': "False",
+        'BD_PASSWORD': None,
+        'BD_PORT': 22225,
+        'BD_USERNAME': None,
+        'CUSTOM_SEARCH_ENGINE_ID': google_search_id,
+        'DEBUG_CODE': debug_code,
+        'FREQUENCY_PENALTY': 0.0,
+        'GOOGLE_API_KEY': google_api_key,
+        'MAX_CONVERSATION': 5,
+        'MAX_TOKENS': 800,
+        'OPENAI_API_KEY': api_key,
+        'OPENAI_MODEL_NAME': model,
+        'OPENAI_URL': "https://api.openai.com/v1/chat/completions",
+        'PRESENCE_PENALTY': 0.0,
+        'TEMPERATURE': 0.8,
+        'TOP_P': 0.0,
     }
+
+
 
 def load_config_from_file(config_file):
     with open(config_file, 'r') as f:
         config_data = json.load(f)
     return config_data
 
+
 config_file = "config.json"
 
-if getattr(sys, 'frozen', False):
-    print('Bundle Detected, asking user for variables.')
-    
-    if os.path.exists(config_file):
-        config_data = load_config_from_file(config_file)
+
+def load_variables(frozen):
+    if frozen:
+        if os.path.exists(config_file):
+            config_data = load_config_from_file(config_file)
+        else:
+            config_data = prompt_user_for_config()
+            print(
+                "Configuration saved to config.json, edit the file to change advanced settings")
+
+            with open(config_file, 'w') as f:
+                json.dump(config_data, f)
+
+        return config_data
+
     else:
-        config_data = prompt_user_for_config()
-        print("Configuration saved to config.json, edit the file to change additional settings")
-
-        with open(config_file, 'w') as f:
-            json.dump(config_data, f)
-
-    api_function = config_data.get("api_function", "OPENAI")
-    api_url = config_data.get("api_url", "https://api.openai.com/v1/chat/completions")
-    max_tokens = config_data.get("max_tokens", 800)
-    temperature = config_data.get("temperature", 0.8)
-    frequency_penalty = config_data.get("frequency_penalty", 0.0)
-    presence_penalty = config_data.get("presence_penalty", 0.0)
-    top_p = config_data.get("top_p", 0.0)
-    local_memory_file = config_data.get("local_memory_file", "memory.json")
-    debug_code = config_data.get("debug_code", False)
-    api_throttle = config_data.get("api_throttle", 10)
-    api_retry = config_data.get("api_retry", 10)
-    api_timeout = config_data.get("api_timeout", 90)
-    api_count = config_data.get("api_count", 0)
-    api_key = config_data.get("api_key")
-    google_api_key = config_data.get("google_api_key")
-    google_search_id = config_data.get("google_search_id")
-    model = config_data.get("model")
-else:
-    debug_log('Not running from PyInstaller bundle')
-
-    api_function = os.getenv("API_FUNCTION", "default_api_function")
-    max_tokens = int(os.getenv("MAX_TOKENS", "100"))
-    temperature = float(os.getenv("TEMPERATURE", "0.8"))
-    frequency_penalty = float(os.getenv("FREQUENCY_PENALTY", "0.0"))
-    presence_penalty = float(os.getenv("PRESENCE_PENALTY", "0.0"))
-    top_p = float(os.getenv("TOP_P", "1.0"))
-    local_memory_file = os.getenv("LOCAL_MEMORY_FILE", "memory.json")
-    debug_code = os.getenv("DEBUG_CODE", "False") == "True"
-    api_throttle = int(os.environ.get("API_THROTTLE", 10))
-    api_retry = int(os.environ.get("API_RETRY", 10))
-    api_timeout = int(os.environ.get("API_TIMEOUT", 90))
-    google_api_key = os.environ["GOOGLE_API_KEY"]
-    google_search_id = os.environ["CUSTOM_SEARCH_ENGINE_ID"]
-    bd_enabled = os.getenv("BD_ENABLED", "False") == "True"
-    bd_username = os.getenv("BD_USERNAME")
-    bd_password = os.getenv("BD_PASSWORD")
-    bd_port = int(os.getenv("BD_PORT", 22225))
-#endregion
+        load_dotenv(override=True)
+        return os.environ
 
 
-# region ### FUNCTIONS ###
-max_conversation = int(os.environ.get('MAX_CONVERSATION', 5))
-max_characters = int(os.environ.get('MAX_CHARACTERS', 1000))
-api_count = 0
+def get_variable(env_data, variable_name, default_value=None, variable_type=None):
+    value = env_data.get(variable_name, default_value)
+
+    if variable_type == "int":
+        return int(value)
+    elif variable_type == "float":
+        return float(value)
+    elif variable_type == "bool":
+        return value == "True"
+
+    return value
+
+
+config_file = "config.json"
+frozen = getattr(sys, 'frozen', False)
+env_data = load_variables(frozen)
+
+api_function = get_variable(env_data, "API_FUNCTION", "OPENAI")
+api_retry = get_variable(env_data, "API_RETRY", 10, "int")
+api_throttle = get_variable(env_data, "API_THROTTLE", 10, "int")
+api_timeout = get_variable(env_data, "API_TIMEOUT", 90, "int")
+bd_enabled = get_variable(env_data, "BD_ENABLED", "False", "bool")
+bd_password = get_variable(env_data, "BD_PASSWORD", None)
+bd_port = get_variable(env_data, "BD_PORT", 22225, "int")
+bd_username = get_variable(env_data, "BD_USERNAME", None)
+debug_code = get_variable(env_data, "DEBUG_CODE", "False", "bool")
+frequency_penalty = get_variable(env_data, "FREQUENCY_PENALTY", 0.0, "float")
+google_api_key = get_variable(env_data, "GOOGLE_API_KEY")
+google_search_id = get_variable(env_data, "CUSTOM_SEARCH_ENGINE_ID")
+max_characters = get_variable(env_data, "MAX_CHARACTERS", 1000, "int")
+max_conversation = get_variable(env_data, "MAX_CONVERSATION", 5, "int")
+max_tokens = get_variable(env_data, "MAX_TOKENS", 800, "int")
+presence_penalty = get_variable(env_data, "PRESENCE_PENALTY", 0.0, "float")
+temperature = get_variable(env_data, "TEMPERATURE", 0.8, "float")
+top_p = get_variable(env_data, "TOP_P", 0.0, "float")
+
 def alternate_api(number):
     global api_count
     global model
     global api_type
     global api_url
     global api_key
-    if getattr(sys, 'frozen', False):
-        return api_url, api_key, model, api_type
-    else:
-        if api_function == "ALTERNATE":
-            api_count += 1
-            if number % 2 == 0:
-                api_url = os.getenv("AZURE_URL")
-                api_key = os.getenv("AZURE_API_KEY")
-                model = os.getenv("AZURE_MODEL_NAME")
-                api_type = "AZURE"
-            else:
-                api_url = os.getenv("OPENAI_URL")
-                api_key = os.getenv("OPENAI_API_KEY")
-                model = os.getenv("OPENAI_MODEL_NAME")
-                api_type = "OPENAI"
-        elif api_function == "AZURE":
-            api_url = os.getenv("AZURE_URL")
-            api_key = os.getenv("AZURE_API_KEY")
-            model = os.getenv("AZURE_MODEL_NAME")
-            api_type = "AZURE"
-        elif api_function == "OPENAI":
-            api_url = os.getenv("OPENAI_URL")
-            api_key = os.getenv("OPENAI_API_KEY")
-            model = os.getenv("OPENAI_MODEL_NAME")
-            api_type = "OPENAI"
-        else:
-            raise ValueError(
-                "Invalid API_FUNCTION value. Supported values are 'AZURE', 'OPENAI', or 'ALTERNATE'."
-            )
-        debug_log(
-            "\nAPI Count: "
-            + str(api_count)
-            + "\nAPI URL: "
-            + api_url
-            + "\nAPI Key: "
-            + api_key
-            + "\nAPI Model: "
-            + model
-            + "\nAPI Type: "
-            + api_type
-        )
-    
-    return api_url, api_key, model, api_type
 
+    if api_function == "ALTERNATE":
+        api_count += 1
+        if number % 2 == 0:
+            api_url = get_variable(env_data, "AZURE_URL")
+            api_key = get_variable(env_data, "AZURE_API_KEY")
+            model = get_variable(env_data, "AZURE_MODEL_NAME")
+            api_type = "AZURE"
+        else:
+            api_url = get_variable(env_data, "OPENAI_URL")
+            api_key = get_variable(env_data, "OPENAI_API_KEY")
+            model = get_variable(env_data, "OPENAI_MODEL_NAME")
+            api_type = "OPENAI"
+    elif api_function == "AZURE":
+        api_url = get_variable(env_data, "AZURE_URL")
+        api_key = get_variable(env_data, "AZURE_API_KEY")
+        model = get_variable(env_data, "AZURE_MODEL_NAME")
+        api_type = "AZURE"
+    elif api_function == "OPENAI":
+        api_url = get_variable(env_data, "OPENAI_URL")
+        api_key = get_variable(env_data, "OPENAI_API_KEY")
+        model = get_variable(env_data, "OPENAI_MODEL_NAME")
+        api_type = "OPENAI"
+    else:
+        raise ValueError(
+            "Invalid API_FUNCTION value. Supported values are 'AZURE', 'OPENAI', or 'ALTERNATE'."
+        )
 
 # Typing effect function
 def typing_print(text, color=None):
@@ -250,7 +250,7 @@ def typing_print(text, color=None):
 
     for char in text:
         print(colored(char, color=color) if color else char, end="", flush=True)
-        time.sleep(0.005)  # adjust delay time as desired
+        time.sleep(0.003)  # adjust delay time as desired
     print()  # move cursor to the next line after printing the text
 
 def remove_brackets(text):
