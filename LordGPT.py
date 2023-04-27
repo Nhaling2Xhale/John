@@ -18,6 +18,7 @@ from termcolor import colored
 from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
 from unidecode import unidecode
+from yaspin import yaspin
 import pdfkit
 import urllib.request
 
@@ -31,16 +32,16 @@ working_folder = os.path.join(current_path, 'LordGPT_folder')
 if not os.path.exists(working_folder):
     os.makedirs(working_folder)
 
-
-# endregion
-# region ### GLOBAL FUNCTIONS. ###
+# region GLOBAL VARIABLES
 config_file = "config.json"
-current_version = "1.1.6"
+current_version = "1.1.7"
 update_url = "https://thelordg.com/downloads/version.txt"
 changelog_url = "https://thelordg.com/downloads/changelog.txt"
 download_link = "https://thelordg.com/downloads/LordGPT.exe"
 message_history = []
+# endregion
 
+# region GLOBAL FUNCTIONS
 def debug_log(message, value=None):
     if debug_code:
         # Create the debug.txt file path
@@ -275,14 +276,28 @@ def get_random_user_agent():
         user_agent = ua.random
     return user_agent
 
+def get_random_text_and_color(text_color_dict):
+    key = random.choice(list(text_color_dict.keys()))
+    return key, text_color_dict[key]
 
 # endregion
 
 # region ### API QUERY ###
-
+text_color_dict = {
+    "Unleashing hamsters..........": "light_green",
+    "Firing up the potato cannons..": "light_yellow",
+    "Summoning the data demons.....": "magenta",
+    "Engaging turbo snail mode.....": "light_blue",
+    "Sending carrier pigeons.......": "white",
+    "Revving up the avocado engine.": "green",
+    "Awakening the Kraken.........": "cyan",
+    "Charging the laser chickens...": "yellow",
+    "Summoning the dark lord.......": "red",
+    "Brewing coffee for the servers.": "dark_grey"
+}
 
 def query_bot(messages, retries=api_retry):
-
+        random_text, random_color = get_random_text_and_color(text_color_dict)
         alternate_api(api_count)    
         time.sleep(api_throttle)
         debug_log("Model: ", model)
@@ -306,117 +321,118 @@ def query_bot(messages, retries=api_retry):
         debug_log("Temperature:", temperature)
         debug_log("Top P:", top_p)
         
-        for attempt in range(retries):
-            try:
-                
-                json_payload = json.dumps(
-                    {
-                        "model": model,
-                        "messages": messages,
-                        "max_tokens": max_tokens,
-                        "temperature": temperature,
-                        "top_p": top_p,
-                        "frequency_penalty": presence_penalty,
-                        "presence_penalty": presence_penalty,
+        with yaspin(text=random_text, color=random_color) as spinner:
+            for attempt in range(retries):
+                try:
+                    
+                    json_payload = json.dumps(
+                        {
+                            "model": model,
+                            "messages": messages,
+                            "max_tokens": max_tokens,
+                            "temperature": temperature,
+                            "top_p": top_p,
+                            "frequency_penalty": presence_penalty,
+                            "presence_penalty": presence_penalty,
+                        }
+                    )
+                    
+                    debug_log("JSON Payload: ", json_payload)
+                    headers = {
+                        "api-key": api_key,
+                        "Content-Type": "application/json",
+                        "Authorization": f"Bearer {api_key}",
                     }
-                )
-                
-                debug_log("JSON Payload: ", json_payload)
-                headers = {
-                    "api-key": api_key,
-                    "Content-Type": "application/json",
-                    "Authorization": f"Bearer {api_key}",
-                }
-                
-                # BRIGHT DATA PROXY
-                if bd_enabled:
                     
-                    json_utf8 = json_payload.encode('utf-8')
-                    session_id = random.random()
-                    super_proxy_url = ('http://%s-session-%s:%s@zproxy.lum-superproxy.io:%d' %
-                                (bd_username, session_id, bd_password, bd_port))
-                    proxy_handler = urllib.request.ProxyHandler({
-                        'http': super_proxy_url,
-                        'https': super_proxy_url,
-                })
-                    
-                    ssl._create_default_https_context = ssl._create_unverified_context
-                    opener = urllib.request.build_opener(proxy_handler)
-                    
-                    req = urllib.request.Request(
-                        api_url, data=json_utf8, headers=headers)  # type: ignore
-                    
+                    # BRIGHT DATA PROXY
+                    if bd_enabled:
+                        
+                        json_utf8 = json_payload.encode('utf-8')
+                        session_id = random.random()
+                        super_proxy_url = ('http://%s-session-%s:%s@zproxy.lum-superproxy.io:%d' %
+                                    (bd_username, session_id, bd_password, bd_port))
+                        proxy_handler = urllib.request.ProxyHandler({
+                            'http': super_proxy_url,
+                            'https': super_proxy_url,
+                    })
+                        
+                        ssl._create_default_https_context = ssl._create_unverified_context
+                        opener = urllib.request.build_opener(proxy_handler)
+                        
+                        req = urllib.request.Request(
+                            api_url, data=json_utf8, headers=headers)  # type: ignore
+                        
 
-                    #BRIGHT DATA REQUEST                
-                    request = opener.open(req, timeout=api_timeout)
-                    
-                    uresponse = request.read()
-                    
-                    utfresponse = uresponse.decode('utf-8')
-                    botresponse = json.loads(utfresponse)
-                    response_json = botresponse
-                    
-                    debug_log("Bot reply: ", botresponse)
-                else:
-                    #STANDARD API REQUEST
-                    
-                    botresponse = requests.request("POST", api_url, headers=headers, data=json_payload, timeout=api_timeout)
-                    
-                    response_json = botresponse.json()
-                    
-                debug_log("Bot reply: ", botresponse)
-                
-                # Handling error response
-                
-                if "error" in response_json:
-                    error_message = response_json["error"]["message"]
-                    print(f"Error: {error_message}")
-                    print("max_tokens is too high.....GPT3.5 is limited, so change max_tokens to a lower value.")
-                    continue
-            
-            
-                responseparsed = response_json["choices"][0]["message"]["content"]
-                
-                debug_log(f"Parsed Choices Node: {responseparsed}")
-                responseformatted = json.loads(responseparsed)
-                
-        
-                if responseformatted is not None:
-                    if "current_task" in responseformatted:
-                        current_task = responseformatted["current_task"]
-                        reasoning = responseformatted["reasoning_80_words"]
-                        command_string = responseformatted["command_string"]
-                        command_argument = responseformatted["command_argument"]
-                        self_prompt_action = responseformatted["self_prompt_action"]
+                        #BRIGHT DATA REQUEST                
+                        request = opener.open(req, timeout=api_timeout)
                         
+                        uresponse = request.read()
                         
-                        return (
-                            reasoning,
-                            command_string,
-                            command_argument,
-                            current_task,
-                            self_prompt_action,
-                        )
+                        utfresponse = uresponse.decode('utf-8')
+                        botresponse = json.loads(utfresponse)
+                        response_json = botresponse
                         
+                        debug_log("Bot reply: ", botresponse)
                     else:
+                        #STANDARD API REQUEST
                         
+                        botresponse = requests.request("POST", api_url, headers=headers, data=json_payload, timeout=api_timeout)
+                        
+                        response_json = botresponse.json()
+                        
+                    debug_log("Bot reply: ", botresponse)
+                    
+                    # Handling error response
+                    
+                    if "error" in response_json:
+                        error_message = response_json["error"]["message"]
+                        print(f"Error: {error_message}")
+                        print("max_tokens is too high.....GPT3.5 is limited, so change max_tokens to a lower value.")
+                        continue
+                
+                
+                    responseparsed = response_json["choices"][0]["message"]["content"]
+                    
+                    debug_log(f"Parsed Choices Node: {responseparsed}")
+                    responseformatted = json.loads(responseparsed)
+                    
+            
+                    if responseformatted is not None:
+                        if "current_task" in responseformatted:
+                            current_task = responseformatted["current_task"]
+                            reasoning = responseformatted["reasoning_80_words"]
+                            command_string = responseformatted["command_string"]
+                            command_argument = responseformatted["command_argument"]
+                            self_prompt_action = responseformatted["self_prompt_action"]
+                            
+                            
+                            return (
+                                reasoning,
+                                command_string,
+                                command_argument,
+                                current_task,
+                                self_prompt_action,
+                            )
+                            
+                        else:
+                            
+                            alternate_api(api_count)
+                            return (
+                                "No valid json, ensure you format your responses as the required json",
+                                "None",
+                                "None",
+                                "Reformat reply as json",
+                                "Continue where you left off",
+                                "Unknown",
+                            )
+        
+                except Exception as e:
+                    if attempt < retries - 1:
+                        print(f"API Exception: {str(e)}...Retrying...")
                         alternate_api(api_count)
-                        return (
-                            "No valid json, ensure you format your responses as the required json",
-                            "None",
-                            "None",
-                            "Reformat reply as json",
-                            "Continue where you left off",
-                            "Unknown",
-                        )
-     
-            except Exception as e:
-                if attempt < retries - 1:
-                    print(f"API Exception: {str(e)}...Retrying...")
-                    alternate_api(api_count)
-                    time.sleep(2**attempt)
-                else:
-                    raise e
+                        time.sleep(2**attempt)
+                    else:
+                        raise e
         
 
 
