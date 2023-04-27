@@ -34,7 +34,7 @@ if not os.path.exists(working_folder):
 
 # region GLOBAL VARIABLES
 config_file = "config.json"
-current_version = "1.1.7"
+current_version = "1.2"
 update_url = "https://thelordg.com/downloads/version.txt"
 changelog_url = "https://thelordg.com/downloads/changelog.txt"
 download_link = "https://thelordg.com/downloads/LordGPT.exe"

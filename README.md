@@ -5,7 +5,7 @@ JOIN US ON DISCORD: https://discord.gg/mhGtn6fb
 CHANGELOG HAS MOVED TO CHANGE_LOG.md
 
 WELCOME LordGPT is an automated AI Assistant that can accomplish a wide range of tasks.
-- Browse Internet and Research.
+- Browse Internet and Research. (Playwright Needed pip install playwright | playwirght install)
 - Read and Write local files.
 - Generate Python Scripts, and even write its own commands to further is capabilities.
 - Search Google
@@ -44,6 +44,7 @@ RUN THESE BASH COMMANDS, COPY AND PASTE
 3. type git clone GITURL
 4. cd LordGPT
 5. pip install -r requirements.txt - Sorry for the long requirements, its my dev machine.
+6. playwright install
 7. python3 LordGPT.py
 
 MAC BINARY:
