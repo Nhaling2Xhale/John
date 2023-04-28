@@ -82,9 +82,9 @@ def check_for_updates():
 check_for_updates()
 
 def prompt_user_for_config():
-    api_key = input("Please enter your OPENAI API key: ")
-    google_api_key = input("Please enter your Google API key: ")
-    google_search_id = input("Please enter your Google Search ID: ")
+    api_key = input(
+        "Please enter your OPENAI API key:(Sign up for free at https://platform.openai.com/account/api-keys)  ")
+    serp_api = input("Please enter your SERP API key:(Sign up for free at https://serpapi.com) ")
 
     model = ""
     while model not in ["gpt-3.5-turbo", "gpt-4"]:
@@ -124,6 +124,7 @@ def prompt_user_for_config():
         'OPENAI_MODEL_NAME': model,
         'OPENAI_URL': "https://api.openai.com/v1/chat/completions",
         'PRESENCE_PENALTY': 0.0,
+        'SERP_API': serpapi_key,
         'TEMPERATURE': 0.8,
         'TOP_P': 0.0,
     }
@@ -194,6 +195,7 @@ max_tokens = get_variable(env_data, "MAX_TOKENS", 800, "int")
 presence_penalty = get_variable(env_data, "PRESENCE_PENALTY", 0.0, "float")
 temperature = get_variable(env_data, "TEMPERATURE", 0.8, "float")
 top_p = get_variable(env_data, "TOP_P", 0.0, "float")
+serpapi_key = get_variable(env_data, "SERP_API", None)
 
 
 api_count = 0
@@ -289,18 +291,29 @@ def get_random_text_and_color(text_color_dict):
 
 # endregion
 
+
 # region ### API QUERY ###
 text_color_dict = {
-    "Unleashing hamsters..........": "light_green",
-    "Firing up the potato cannons..": "light_yellow",
-    "Summoning the data demons.....": "magenta",
-    "Engaging turbo snail mode.....": "light_blue",
-    "Sending carrier pigeons.......": "white",
-    "Revving up the avocado engine.": "green",
-    "Awakening the Kraken.........": "cyan",
-    "Charging the laser chickens...": "yellow",
-    "Summoning the dark lord.......": "red",
-    "Brewing coffee for the servers.": "dark_grey"
+    "Questing with LordGPT............": "light_blue",
+    "Inserting coins for LordGPT......": "light_blue",
+    "Restoring LordGPT save files.....": "light_blue",
+    "LordGPT speedrunning loading.....": "light_blue",
+    "Swapping LordGPT memory cards....": "light_blue",
+    "Hunting LordGPT's Easter eggs....": "light_blue",
+    "Entering LordGPT's cheat code....": "light_blue",
+    "Powering up with LordGPT.........": "light_blue",
+    "Recruiting LordGPT's party.......": "light_blue",
+    "Crafting gear in LordGPT's realm.": "light_blue",
+    "Racing LordGPT to the finish.....": "light_blue",
+    "Leveling up with LordGPT.........": "light_blue",
+    "Conquering LordGPT's leaderboard.": "light_blue",
+    "Achieving LordGPT high scores....": "light_blue",
+    "Exploring LordGPT's pixel world..": "light_blue",
+    "Unlocking LordGPT's hidden levels": "light_blue",
+    "Battling LordGPT's epic bosses...": "light_blue",
+    "Diving into LordGPT's pixel sea..": "light_blue",
+    "Linking with LordGPT's dimensions": "light_blue",
+    "Jamming to LordGPT's retro tunes.": "light_blue"
 }
 
 def query_bot(messages, retries=api_retry):
@@ -308,26 +321,6 @@ def query_bot(messages, retries=api_retry):
         random_text, random_color = get_random_text_and_color(text_color_dict)
         alternate_api(api_count)    
         time.sleep(api_throttle) #type: ignore
-        debug_log("Model: ", model)
-        debug_log("API Key:", api_key)
-        debug_log("Google API Key:", google_api_key)
-        debug_log("Google Search ID:", google_search_id)
-        debug_log("API Function:", api_function)
-        debug_log("API Retry:", api_retry)
-        debug_log("API Throttle:", api_throttle)
-        debug_log("API Timeout:", api_timeout)
-        debug_log("BD Enabled:", bd_enabled)
-        debug_log("BD Password:", bd_password)
-        debug_log("BD Port:", bd_port)
-        debug_log("BD Username:", bd_username)
-        debug_log("Debug Code:", debug_code)
-        debug_log("Frequency Penalty:", frequency_penalty)
-        debug_log("Max Characters:", max_characters)
-        debug_log("Max Conversation:", max_conversation)
-        debug_log("Max Tokens:", max_tokens)
-        debug_log("Presence Penalty:", presence_penalty)
-        debug_log("Temperature:", temperature)
-        debug_log("Top P:", top_p)
         
         with yaspin(text=random_text, color=random_color) as spinner:
             for attempt in range(retries): #type: ignore
@@ -786,64 +779,6 @@ def create_task_list(
 
 # endregion
 
-# region ### CREATE PYTHON SCRIPT ###
-
-def create_python_script(
-    reasoning, command_string, command_argument, current_task, self_prompt_action
-):
-    try:
-        filename = None
-        content = None
-
-        # Extract filename and content using regex
-        regex_pattern = r'Filename:\s*(\S+)\s+Content:\s*```(.*?)```'
-        match = re.search(regex_pattern, command_argument, re.DOTALL)
-
-        if match:
-            filename = match.group(1)
-            content = match.group(2)
-        else:
-            set_global_success(False)
-            return create_json_message(
-                "Invalid args. Use the Format: Filename: [FILENAME] Content: ```[CONTENT]```",
-                command_string,
-                command_argument,
-                current_task,
-                "Try again using the correct arguments.",
-                
-            )
-
-        os.makedirs(working_folder, exist_ok=True)
-        file_path = os.path.join(working_folder, filename)
-
-        with open(file_path, "w") as file:
-            file.write(content)
-
-        set_global_success(True)
-
-        return create_json_message(
-            f"Python code created and saved successfully: Filename: {filename}",
-            command_string,
-            command_argument,
-            current_task,
-            self_prompt_action,
-            
-        )
-
-    except Exception as e:
-        set_global_success(False)
-        debug_log(f"Error: {str(e)}")
-        return create_json_message(
-            f"Error: {str(e)}",
-            command_string,
-            command_argument,
-            current_task,
-            "Read the contents of the script to ensure its formatted correctly, or reserach the internet on the error.",
-            
-        )
-
-# endregion
-
 # region ### FILE OPERATION ###
 
 
@@ -954,12 +889,12 @@ def download_file(reasoning, command_string, command_argument, current_task, sel
 
 #endregion        
 
-# region ### SEARCH GOOGLE ###
+# region ### SEARCH ENGINE ###
 
 
 def search_engine(reasoning, command_string, command_argument, current_task, self_prompt_action):
     params = {
-        "api_key": "",
+        "api_key": serpapi_key,
         "engine": "duckduckgo",
         "q": command_argument,
         "kl": "us-en",
