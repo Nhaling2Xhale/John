@@ -908,16 +908,17 @@ def search_engine(reasoning, command_string, command_argument, current_task, sel
 
     for index, result in enumerate(results["organic_results"], start=1):
         formatted_results += f"{index}. Title: {result['title']}, Link: {result['link']};\n"
-    
+
     sanitized_results = json.dumps(formatted_results)
     debug_log(sanitized_results)
-    return create_json_message(
-        "Search Results: " + sanitized_results,  # type: ignore
-        command_string,
-        command_argument,
-        current_task,
-        self_prompt_action,
-    )
+    return {
+        "reasoning_80_words": "Search Results: " + sanitized_results,
+        "command_string": command_string,
+        "command_argument": command_argument,
+        "current_task": current_task,
+        "self_prompt_action": self_prompt_action
+    }
+
 
 
 
