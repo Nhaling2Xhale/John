@@ -1,3 +1,8 @@
+UDPATE 4/28/2023
+- New file operation code. Combined all file operations into one.
+- New Search Engine, SERPA API. Sign up, free here serpaapi.com THis will allow us to tie into all sorts of search API's with a single function.
+- -
+
 
 UPDATE 4/27/2023
 - Moved Browsing to Playwright and Chrome.

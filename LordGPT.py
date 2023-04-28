@@ -844,7 +844,7 @@ def create_python_script(
 
 # endregion
 
-# region ### WRITE NEW CONTENT TO FILE ###
+# region ### FILE OPERATION ###
 
 
 import os
@@ -855,237 +855,55 @@ def file_operations(reasoning, command_string, command_argument, current_task, s
         filename, content, operation = command_argument.split("|")
         content = content.strip("```")
         file_path = os.path.join(working_folder, filename)
-
+    
         command_string = "file_operations"
         command_argument = operation
         current_task = "File Management"
         self_prompt_action = "Performing " + operation.capitalize()
         operation_result = ""
-
-        if operation == "write":
-            with open(file_path, "w") as file:
-                file.write(content)
-            operation_result = "File Written Successfully"
-        elif operation == "read":
-            with open(file_path, "r") as file:
-                read_content = file.read()
-            operation_result = "File Content: " + read_content
-        elif operation == "append":
-            with open(file_path, "a") as file:
-                file.write(content)
-            operation_result = "File Content appended successfully"
-        elif operation == "rename":
-            new_name = content.strip()
-            new_path = os.path.join(working_folder, new_name)
-            os.rename(file_path, new_path)
-            operation_result = "File Renamed: " + new_name
-        elif operation == "move":
-            
-            destination_path = content.strip()
-            destination_path = os.path.join(working_folder, destination_path)
-            shutil.move(file_path, destination_path)
-            operation_result = "File Moved: " + destination_path
-        elif operation == "delete":
-            os.remove(file_path)
-            operation_result = "File Deleted: " + file_path
-        else:
-            return create_json_message("Invalid file operation: Every argument must contain this format:(filename|```content```|operation) The filename is the name of the file you want to operate on. The content needs to be formatted text or formatted code as a multiline string using triple backticks (```). For file rename and move operations, the content needs be the new name or destination path, respectively. The following file operations are valid: 'write', 'read', 'append', 'rename', 'move', 'delete'. Read files to verify.", command_string, command_argument, current_task, "Retry using a valid file_operation format and operation")
+    
+        try:
+            if operation == "write":
+                with open(file_path, "w") as file:
+                    file.write(content)
+                operation_result = "File Written Successfully"
+            elif operation == "read":
+                with open(file_path, "r") as file:
+                    read_content = file.read()
+                operation_result = "File Content: " + read_content
+            elif operation == "append":
+                with open(file_path, "a") as file:
+                    file.write(content)
+                operation_result = "File Content appended successfully"
+            elif operation == "rename":
+                new_name = content.strip()
+                new_path = os.path.join(working_folder, new_name)
+                os.rename(file_path, new_path)
+                operation_result = "File Renamed: " + new_name
+            elif operation == "move":
+                destination_path = content.strip()
+                destination_path = os.path.join(working_folder, destination_path)
+                shutil.move(file_path, destination_path)
+                operation_result = "File Moved: " + destination_path
+            elif operation == "delete":
+                os.remove(file_path)
+                operation_result = "File Deleted: " + file_path
+            else:
+                return create_json_message("Invalid file operation: Every argument must contain this format:(filename|```content```|operation) The filename is the name of the file you want to operate on. The content needs to be formatted text or formatted code as a multiline string using triple backticks (```). For file rename and move operations, the content needs be the new name or destination path, respectively. The following file operations are valid: 'write', 'read', 'append', 'rename', 'move', 'delete'. Read files to verify.", command_string, command_argument, current_task, "Retry using a valid file_operation format and operation")
+        except FileNotFoundError:
+            debug_log("File Operation Error : Folder does not exist" + command_string + command_argument +
+                      current_task + self_prompt_action)
+            return create_json_message("Error: Folder does not exist. Please make sure the folder exists before performing file operations.", command_string, command_argument, current_task, "Retry with an existing folder")
+    
         operation_cleaned = json.dumps(operation_result)
         debug_log("File Operation : " + operation_cleaned + command_string + command_argument +
                   current_task + self_prompt_action)
         return create_json_message(operation_cleaned, command_string, command_argument, operation_cleaned, "Task Successful")
     except ValueError:
-        debug_log("File Operation Error : " + reasoning + command_string + command_argument + 
+        debug_log("File Operation Error : " + reasoning + command_string + command_argument +
                   current_task + self_prompt_action)
         return create_json_message("Error: Every argument must contain this format:(filename|```content```|operation) The filename is the name of the file you want to operate on. The content needs to be formatted text or formatted code as a multiline string using triple backticks (```). For file rename and move operations, the content needs be the new name or destination path, respectively. The following file operations are valid: 'write', 'read', 'append', 'rename', 'move', 'delete'. Read files to verify.", command_string, command_argument, current_task, "Retry using a valid file_operation format and operation")
-
-
-
-def write_new_content_to_file(
-    reasoning, command_string, command_argument, current_task, self_prompt_action
-):
-    try:
-        filename = None
-        content = None
-
-        # Extract filename and content using regex
-        regex_pattern = r'Filename:\s*(\S+)\s+Content:\s*```(.*?)```'
-        match = re.search(regex_pattern, command_argument, re.DOTALL)
-        os.makedirs(working_folder, exist_ok=True)
-        if match:
-            filename = match.group(1)
-            content = match.group(2)
-        else:
-            set_global_success(False)
-            return create_json_message(
-                "Invalid args. Use the Format: Filename: [FILENAME] Content: ```[CONTENT]```",
-                command_string,
-                command_argument,
-                current_task,
-                "Try the command again using the correct arguments.",
-                
-            )
-
-        if os.path.exists(os.path.join(working_folder, filename)):
-            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"{filename}_{timestamp}"
-
-        file_path = os.path.join(working_folder, filename)
-
-        with open(file_path, "w") as file:
-            file.write(content)
-
-        set_global_success(True)
-        return create_json_message(
-            f"File {filename} created and saved successfully.",
-            command_string,
-            command_argument,
-            current_task,
-            self_prompt_action,
-            
-        )
-
-    except Exception as e:
-        set_global_success(False)
-        debug_log(f"Error: {str(e)}")
-        return create_json_message(
-            f"Error: {str(e)}",
-            command_string,
-            command_argument,
-            "Retry or Reserch Current Task",
-            self_prompt_action,
-            
-        )
-
-
-# endregion
-
-# region ## APPEND CONTENT TO FILE ##
-
-def append_content_to_existing_file(
-    reasoning, command_string, command_argument, current_task, self_prompt_action
-):
-    try:
-        # Extract filename and content using regex
-        regex_pattern = r'Filename:\s*(\S+)\s+Content:\s*```(.*?)```'
-        match = re.search(regex_pattern, command_argument, re.DOTALL)
-
-        if match:
-            filename = match.group(1)
-            content = match.group(2)
-        else:
-            set_global_success(False)
-            return create_json_message(
-                "Invalid format. Use the Format: Filename: [FILENAME] Content: ```[CONTENT]```",
-                command_string,
-                command_argument,
-                current_task,
-                "Try again using the correct arguments.",
-                
-            )
-
-        if not os.path.exists(working_folder):
-            os.makedirs(working_folder)
-
-        file_path = os.path.join(working_folder, filename)
-
-        with open(file_path, "a") as file:
-            file.write(content + "\n")
-
-        return create_json_message(
-            "File content successfully appended to " + filename,
-            command_string,
-            command_argument,
-            current_task,
-            self_prompt_action,
-            
-        )
-    except Exception as e:
-        set_global_success(False)
-        debug_log(f"Error: {str(e)}")
-        return create_json_message(
-            f"Error: {str(e)}",
-            command_string,
-            command_argument,
-            "Retry or Reserch Current Task",
-            self_prompt_action,
-            
-        )
-
-
-# endregion
-
-# region ### READ CONTENT FROM FILE ###
-
-
-def read_content_from_file(
-    reasoning, command_string, command_argument, current_task, self_prompt_action
-):
-    try:
-        filename = None
-        max_characters = 1000  # define max_characters if not already defined
-
-        args = command_argument.split()
-
-        for i, arg in enumerate(args):
-            if arg == "Filename:" and i + 1 < len(args):
-                filename = args[i + 1]
-
-        if not filename:
-            set_global_success(False)
-            debug_log(
-                f"Invalid args. {command_argument} Use the Format: Filename: [FILENAME WITH EXT]"
-            )
-            return create_json_message(
-                f"Invalid args. {command_argument} Use the Format: Filename: [FILENAME WITH EXT]",
-                command_string,
-                command_argument,
-                current_task,
-                "I will use to proper format and try again",
-                
-            )
-
-        # Concatenate the working_folder path with the filename
-        file_path = os.path.join(working_folder, filename)
-
-        if not os.path.exists(file_path):
-            set_global_success(False)
-            debug_log(
-                f"File not found. {command_argument} Use the Format: Filename: [FILENAME WITH EXT]"
-            )
-            return create_json_message(
-                f"File not found. {command_argument} Use the Format: Filename: [FILENAME WITH EXT]",
-                command_string,
-                command_argument,
-                current_task,
-                "I will check that my file name is correct or fix the format of my argument",
-                
-            )
-
-        with open(file_path, "r") as file:
-            content = file.read()[:max_characters]
-        set_global_success(True)
-        return create_json_message(
-            "File Content: " + f"{content}",
-            command_string,
-            command_argument,
-            current_task,
-            self_prompt_action,
-            
-        )
-    except Exception as e:
-        set_global_success(True)
-        debug_log(f"Error: {str(e)}")
-        return create_json_message(
-            "Error: " + f"Error: {str(e)}",
-            command_string,
-            command_argument,
-            current_task,
-            "I will research the error",
-            
-        )
-
-
+    
 # endregion
 
 #region ### DOWNLOAD FILES ###
@@ -1139,7 +957,7 @@ def download_file(reasoning, command_string, command_argument, current_task, sel
 # region ### SEARCH GOOGLE ###
 
 
-def search_google(reasoning, command_string, command_argument, current_task, self_prompt_action):
+def search_engine(reasoning, command_string, command_argument, current_task, self_prompt_action):
     params = {
         "api_key": "",
         "engine": "duckduckgo",
@@ -1404,7 +1222,7 @@ def main_loop():
     user_goal = input("Goal: ")
     print(colored("Creating detailed plan to achive the goal....", "green"))
     if not user_goal:
-        user_goal = "Generate a fake txt file with fake content, then use each one of your file_operations to test"
+        user_goal = "Provide a 5 day weather forecast for my location using the weather.gov API and save it to a PDF"
         print(colored("Goal: " + user_goal, "green"))
     set_global_success(True)
 
