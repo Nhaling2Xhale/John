@@ -21,6 +21,7 @@ from fake_useragent import UserAgent
 from unidecode import unidecode
 from yaspin import yaspin
 from serpapi import GoogleSearch
+
 import pdfkit
 import urllib.request
 
@@ -83,8 +84,8 @@ check_for_updates()
 
 def prompt_user_for_config():
     api_key = input(
-        "Please enter your OPENAI API key:(Sign up https://platform.openai.com/account/api-keys)  ")
-    serp_api_key = input("Please enter your SERP API key:(Sign up for free at https://serpapi.com) (Free for now, just hit space, enter) ")
+        "Please enter your OPENAI API key:(Sign up https://platform.openai.com/account/api-keys):  ")
+    serp_api_key = input("Please enter your SERP API key:(Sign up for free at https://serpapi.com) (Come to our discord and Ill give you a key for free, for now...): ")
 
     model = ""
     while model not in ["gpt-3.5-turbo", "gpt-4"]:
@@ -114,10 +115,8 @@ def prompt_user_for_config():
         'BD_PASSWORD': None,
         'BD_PORT': 22225,
         'BD_USERNAME': None,
-        'CUSTOM_SEARCH_ENGINE_ID': "234234",
         'DEBUG_CODE': debug_code,
         'FREQUENCY_PENALTY': 0.0,
-        'GOOGLE_API_KEY': "2323",
         'MAX_CONVERSATION': 5,
         'MAX_TOKENS': 800,
         'OPENAI_API_KEY': api_key,
@@ -187,8 +186,6 @@ bd_port = get_variable(env_data, "BD_PORT", 22225, "int")
 bd_username = get_variable(env_data, "BD_USERNAME", None)
 debug_code = True
 frequency_penalty = get_variable(env_data, "FREQUENCY_PENALTY", 0.0, "float")
-google_api_key = get_variable(env_data, "GOOGLE_API_KEY", None)
-google_search_id = get_variable(env_data, "CUSTOM_SEARCH_ENGINE_ID", None)
 max_characters = get_variable(env_data, "MAX_CHARACTERS", 1000, "int")
 max_conversation = get_variable(env_data, "MAX_CONVERSATION", 5, "int")
 max_tokens = get_variable(env_data, "MAX_TOKENS", 800, "int")
@@ -892,6 +889,11 @@ def download_file(reasoning, command_string, command_argument, current_task, sel
 # region ### SEARCH ENGINE ###
 
 
+def sanitize_content(content):
+    content = unidecode(content)
+    content = content.encode("ascii", "ignore").decode("ascii")
+    return content
+
 def search_engine(reasoning, command_string, command_argument, current_task, self_prompt_action):
     params = {
         "api_key": serp_api_key,
@@ -911,9 +913,10 @@ def search_engine(reasoning, command_string, command_argument, current_task, sel
         formatted_results += f"{index}. Title: {result['title']}, Link: {result['link']};\n"
     
     sanitized_results = json.dumps(formatted_results)
+    sanitized_content = sanitize_content(sanitized_results)
     debug_log(sanitized_results)
     return create_json_message(
-        "Search Results: " + sanitized_results,  # type: ignore
+        "Search Results: " + sanitized_content,  # type: ignore
         command_string,
         command_argument,
         current_task,
@@ -927,10 +930,7 @@ def search_engine(reasoning, command_string, command_argument, current_task, sel
 
 # region ### BROWSE WEBSITE ###
 
-def sanitize_content(content):
-    content = unidecode(content)
-    content = content.encode("ascii", "ignore").decode("ascii")
-    return content
+
 
 
 def extract_text(html_content):
