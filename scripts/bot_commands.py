@@ -41,9 +41,9 @@ botcommands = [
         "command_description": "Provides a list of url's for scraping or browsing."
     },
     {
-        "command_string": "browse_website_url",
-        "command_argument": "'[URL]'",
-        "command_description": "Browse and scrape text or html from a single url."
+        "command_string": "scrape_website_url",
+        "command_argument": "[URL]|[true:false]|max_length=[INT]",
+        "command_description": "Scrape text or html from a single url. url|Raw HTML|Character return length"
     },
     {
         "command_string": "save_research",
