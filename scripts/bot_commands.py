@@ -12,8 +12,8 @@ botcommands = [
     },
     {
         "command_string": "convert_html_to_pdf",
-        "command_argument": "Filename: '[FILENAME]' Content: ```[CONTENT]```",
-        "command_description": "Create PDF's from HTML by replacing [CONTENT] with formatted HTML as a multiline string using triple backticks (```)."
+        "command_argument": "Filename: '[FILENAME]' Content: ```[HTML MARKUP]```",
+        "command_description": "Create PDF's from HTML MARKUP by replacing [HTML MARKUP] as a multiline string using triple backticks (```)."
     },
     {
         "command_string": "create_python_script",
