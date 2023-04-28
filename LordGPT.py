@@ -9,6 +9,7 @@ import subprocess
 import datetime
 import ssl
 import requests
+import shutil
 import requests.exceptions
 from time import sleep
 from typing import Dict
@@ -19,6 +20,7 @@ from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
 from unidecode import unidecode
 from yaspin import yaspin
+from serpapi import GoogleSearch
 import pdfkit
 import urllib.request
 
@@ -209,21 +211,25 @@ def alternate_api(number):
             api_key = get_variable(env_data, "AZURE_API_KEY")
             model = get_variable(env_data, "AZURE_MODEL_NAME")
             api_type = "AZURE"
+            debug_log("API Alternate Type : ", api_type)
         else:
             api_url = get_variable(env_data, "OPENAI_URL")
             api_key = get_variable(env_data, "OPENAI_API_KEY")
             model = get_variable(env_data, "OPENAI_MODEL_NAME")
             api_type = "OPENAI"
+            debug_log("API Alternate Type : ", api_type)
     elif api_function == "AZURE":
         api_url = get_variable(env_data, "AZURE_URL")
         api_key = get_variable(env_data, "AZURE_API_KEY")
         model = get_variable(env_data, "AZURE_MODEL_NAME")
         api_type = "AZURE"
+        debug_log("API Static Type : ", api_type)
     elif api_function == "OPENAI":
         api_url = get_variable(env_data, "OPENAI_URL")
         api_key = get_variable(env_data, "OPENAI_API_KEY")
         model = get_variable(env_data, "OPENAI_MODEL_NAME")
         api_type = "OPENAI"
+        debug_log("API Static Type : ", api_type)
     else:
         raise ValueError(
             "Invalid API_FUNCTION value. Supported values are 'AZURE', 'OPENAI', or 'ALTERNATE'."
@@ -298,6 +304,7 @@ text_color_dict = {
 }
 
 def query_bot(messages, retries=api_retry):
+        debug_log(messages)
         random_text, random_color = get_random_text_and_color(text_color_dict)
         alternate_api(api_count)    
         time.sleep(api_throttle) #type: ignore
@@ -392,16 +399,19 @@ def query_bot(messages, retries=api_retry):
                         
                         continue
                 
-                
+                    debug_log(response_json)    
                     responseparsed = response_json["choices"][0]["message"]["content"]
                     
                     try:
-                        debug_log(f"Parsed Choices Node: {responseparsed}")
                         responseformatted = json.loads(responseparsed)
+                        debug_log(f"Parsed Choices Node: {responseparsed}")
+                        
                     except:
                         alternate_api(api_count)
-                        debug_log(f"Formatted non json response: {responseformatted}]")
-                        responseformatted = create_json_message(responseformatted, "None", "None", "None", "None")
+                        debug_log(
+                            f"Formatted non json response: {responseparsed}]")
+                        responseformatted = create_json_message(
+                            responseparsed, "None", "None", "None", "None")
                    
                     
             
@@ -451,7 +461,7 @@ def query_bot(messages, retries=api_retry):
 # region ### GENERATE PDF ###
 
 
-def convert_html_to_pdf(reasoning, command_string, command_argument, current_task, self_prompt_action):
+def create_pdf_from_html(reasoning, command_string, command_argument, current_task, self_prompt_action):
     try:
         # Extract content between triple backticks
         content_match = re.search(r'```(.*?)```', command_argument, re.DOTALL)
@@ -657,16 +667,17 @@ def run_win_shell_command(
                 "Shell Command Output: "
                 + f"{output.decode('utf-8').strip()}"[:max_characters]
             )
+            
         else:
             set_global_success(False)
             # Add slicing to limit error length
             shell_response = f"Shell Command failed, research the error: {error.decode('utf-8').strip()}"[
                 :max_characters
             ]
-
-    debug_log(shell_response)
+    shell_cleaned = json.dumps(shell_response)
+    debug_log(shell_cleaned)
     return create_json_message(
-        "Windows Command Output: " + shell_response,
+        "Windows Command Output: " + shell_cleaned,
         command_string,
         command_argument,
         "I should analyze the output to ensure success and research any errors",
@@ -679,7 +690,7 @@ def run_win_shell_command(
 # region ### ALLOWS MODEL TO CONTINUE ###
 
 
-def no_command(
+def self_prompt(
     reasoning, command_string, command_argument, current_task, self_prompt_action
 ):
     response_string = json.dumps(command_argument)
@@ -834,6 +845,60 @@ def create_python_script(
 # endregion
 
 # region ### WRITE NEW CONTENT TO FILE ###
+
+
+import os
+import shutil
+
+def file_operations(reasoning, command_string, command_argument, current_task, self_prompt_action):
+    try:
+        filename, content, operation = command_argument.split("|")
+        content = content.strip("```")
+        file_path = os.path.join(working_folder, filename)
+
+        command_string = "file_operations"
+        command_argument = operation
+        current_task = "File Management"
+        self_prompt_action = "Performing " + operation.capitalize()
+        operation_result = ""
+
+        if operation == "write":
+            with open(file_path, "w") as file:
+                file.write(content)
+            operation_result = "File Written Successfully"
+        elif operation == "read":
+            with open(file_path, "r") as file:
+                read_content = file.read()
+            operation_result = "File Content: " + read_content
+        elif operation == "append":
+            with open(file_path, "a") as file:
+                file.write(content)
+            operation_result = "File Content appended successfully"
+        elif operation == "rename":
+            new_name = content.strip()
+            new_path = os.path.join(working_folder, new_name)
+            os.rename(file_path, new_path)
+            operation_result = "File Renamed: " + new_name
+        elif operation == "move":
+            
+            destination_path = content.strip()
+            destination_path = os.path.join(working_folder, destination_path)
+            shutil.move(file_path, destination_path)
+            operation_result = "File Moved: " + destination_path
+        elif operation == "delete":
+            os.remove(file_path)
+            operation_result = "File Deleted: " + file_path
+        else:
+            return create_json_message("Invalid file operation: Every argument must contain this format:(filename|```content```|operation) The filename is the name of the file you want to operate on. The content needs to be formatted text or formatted code as a multiline string using triple backticks (```). For file rename and move operations, the content needs be the new name or destination path, respectively. The following file operations are valid: 'write', 'read', 'append', 'rename', 'move', 'delete'. Read files to verify.", command_string, command_argument, current_task, "Retry using a valid file_operation format and operation")
+        operation_cleaned = json.dumps(operation_result)
+        debug_log("File Operation : " + operation_cleaned + command_string + command_argument +
+                  current_task + self_prompt_action)
+        return create_json_message(operation_cleaned, command_string, command_argument, operation_cleaned, "Task Successful")
+    except ValueError:
+        debug_log("File Operation Error : " + reasoning + command_string + command_argument + 
+                  current_task + self_prompt_action)
+        return create_json_message("Error: Every argument must contain this format:(filename|```content```|operation) The filename is the name of the file you want to operate on. The content needs to be formatted text or formatted code as a multiline string using triple backticks (```). For file rename and move operations, the content needs be the new name or destination path, respectively. The following file operations are valid: 'write', 'read', 'append', 'rename', 'move', 'delete'. Read files to verify.", command_string, command_argument, current_task, "Retry using a valid file_operation format and operation")
+
 
 
 def write_new_content_to_file(
@@ -1074,97 +1139,33 @@ def download_file(reasoning, command_string, command_argument, current_task, sel
 # region ### SEARCH GOOGLE ###
 
 
-def search_google(
-    reasoning, command_string, command_argument, current_task, self_prompt_action
-):
-    try:
-        args = command_argument.split("|")
+def search_google(reasoning, command_string, command_argument, current_task, self_prompt_action):
+    params = {
+        "api_key": "",
+        "engine": "duckduckgo",
+        "q": command_argument,
+        "kl": "us-en",
+        "safe": "-2",
+        "num": "5"
+    }
 
-        query = args[0].strip()
-        start_index = (
-            int(args[1].strip()) if len(args) > 1 and args[1].strip() else None
-        )
-        num_results = (
-            int(args[2].strip()) if len(args) > 2 and args[2].strip() else None
-        )
-        search_type = args[3].strip() if len(args) > 3 and args[3].strip() else None
-        file_type = args[4].strip() if len(args) > 4 and args[4].strip() else None
-        site_search = args[5].strip() if len(args) > 5 and args[5].strip() else None
-        date_restrict = args[6].strip() if len(args) > 6 and args[6].strip() else None
+    search = GoogleSearch(params)
+    results = search.get_dict()
+    formatted_results = "Organic Results:\n"
 
-        url = "https://www.googleapis.com/customsearch/v1"
-        params = {
-            "key": google_api_key,
-            "cx": google_search_id,
-            "q": query,
-            "safe": "off",
-            "num": 10,
-        }
+    for index, result in enumerate(results["organic_results"], start=1):
+        formatted_results += f"{index}. Title: {result['title']}, Link: {result['link']};\n"
+    
+    sanitized_results = json.dumps(formatted_results)
+    debug_log(sanitized_results)
+    return create_json_message(
+        "Search Results: " + sanitized_results,  # type: ignore
+        command_string,
+        command_argument,
+        current_task,
+        self_prompt_action,
+    )
 
-        if num_results:
-            params["num"] = min(num_results, 30)
-
-        if start_index:
-            params["start"] = start_index
-
-        if search_type:
-            params["searchType"] = search_type
-
-        if file_type:
-            params["fileType"] = file_type
-
-        if site_search:
-            params["siteSearch"] = site_search
-
-        if date_restrict:
-            params["dateRestrict"] = date_restrict
-
-        google_response = requests.get(url, params=params)
-        data = google_response.json()
-
-        results = []
-        if "items" in data:
-            for item in data["items"]:
-                results.append({"title": item["title"], "link": item["link"]})
-        else:
-            set_global_success(False)
-            return create_json_message(
-                "No Search Results Returned",
-                command_string,
-                command_argument,
-                current_task,
-                "I will choose another search term",
-                
-            )
-
-        formatted_results = ""
-        for result in results:
-            formatted_results += f"Google Image Search Results:\n"
-            formatted_results += f"Title: {result['title']}\n"
-            formatted_results += f"Link: {result['link']}\n\n"
-        searchresults = json.dumps(formatted_results)
-        debug_log(searchresults)
-        set_global_success(True)
-        # GOOGLE IMAGE RESULTS RETURNED
-        return create_json_message(
-            "Search Results: " + searchresults,
-            command_string,
-            command_argument,
-            current_task,
-            self_prompt_action,
-            
-        )
-    except Exception as e:
-        debug_log(f"Error: {str(e)}")
-        set_global_success(False)
-        return create_json_message(
-            "No Search Results Returned" + f"Error: {str(e)}",
-            command_string,
-            command_argument,
-            current_task,
-            "I will double check my arguments or move to next task.",
-            
-        )
 
 
 # endregion
@@ -1254,6 +1255,7 @@ def mission_accomplished(
 
 
 def message_handler(current_prompt, message, role):
+    
     def update_message_history(role, content):
         try:
             message_history.append({"role": role, "content": content})
@@ -1299,27 +1301,14 @@ def message_handler(current_prompt, message, role):
 def command_handler(
     reasoning, command_string, command_argument, current_task, self_prompt_action
 ):
-    if not command_string:  # Check if the command_string is empty or None
-        return create_json_message(
-            "task",
-            "command_string Executed Successfully",
-            command_string,
-            command_argument,
-            "Verify Task was executed",
-        )
-
     function = globals().get(command_string)
     if function is None:
         debug_log(
-            "Invalid command_string. "
+            "LordGPT Send an invalid command_string : "
             + command_string
             + " is not a valid command_string."
         )
-        return create_json_message(
-            "failed",
-            "The command_string is invalid, send commands in json format like this: "
-            + create_json_message(),
-        )
+        return create_json_message("The command_string " + command_string + " is not a valid command string.", command_string, command_argument, current_task, self_prompt_action)
     return function(
         reasoning, command_string, command_argument, current_task, self_prompt_action
     )
@@ -1381,7 +1370,7 @@ def openai_bot_handler(current_prompt, message, role):
         handler_response = command_handler(
             reasoning, command_string, command_argument, current_task, self_prompt_action
         ) 
-
+        
         if success == True:
 
             return handler_response
@@ -1415,7 +1404,7 @@ def main_loop():
     user_goal = input("Goal: ")
     print(colored("Creating detailed plan to achive the goal....", "green"))
     if not user_goal:
-        user_goal = "Provide a 5 day weather forecast for my location using the weather.gov API and save it to a PDF"
+        user_goal = "Generate a fake txt file with fake content, then use each one of your file_operations to test"
         print(colored("Goal: " + user_goal, "green"))
     set_global_success(True)
 
@@ -1431,15 +1420,19 @@ def main_loop():
         except ValueError:
             print("Invalid input. Using default value of 1.")
             num_iterations = 1
-
+    
         for _ in range(num_iterations):
             loop = bot_send
             bot_send = openai_bot_handler(bot_prompt, loop, "assistant")
             loop = bot_send
-
+    
         continue_choice = input("Is LordG on the right track If not, select n? (y/n): ").lower()
         if continue_choice == "n":
+            new_direction = input("Correct LordGPT: ")
+            openai_bot_handler(
+                bot_prompt, f"""{{"reasoning_80_words": "{new_direction}", "command_string": "[COMMAND]", "command_argument": "[ARGUMENT]", "current_task": "[CURRENT TASK]", "self_prompt_action": "[SUGGESTED NEXT TASK]"}}""", "user")
             break
+    
 
 
 if __name__ == "__main__":
