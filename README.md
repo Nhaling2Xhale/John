@@ -5,11 +5,12 @@ JOIN US ON DISCORD: https://discord.gg/mhGtn6fb
 CHANGELOG HAS MOVED TO CHANGE_LOG.md
 
 WELCOME LordGPT is an automated AI Assistant that can accomplish a wide range of tasks.
+- Tracks his tasks to ensure completion.
 - Browse Internet and Research. (Playwright Needed pip install playwright | playwirght install)
-- Read and Write local files.
+- Read, write, append, delete, rename, move local files.
 - Generate Python Scripts, and even write its own commands to further is capabilities.
-- Search Google
-- Generate formatted PDF Reports
+- Search Engine (Google) - Home Depot, Walkmart, DuckDuckGo, ebay, applestore, yelp, yahoo and more coming soon!
+- Generate html formatted PDF Reports
 - Use more than one API at a time. Options to flip between Azure and OpenAI for each call, reducing timeouts, and helping Azure and OpenAI out by spreading out requests.
 
 LordGPT is different from other AI agents. I designed it not with code, but with prompt engineering. The code is simple as you can tell. The prompts are formatted to perform the tasks, not code. Hundreds of hours were spent on these prompts, and the slightest change will throw him off, keep that in mind. Also, I choose not to use the OpenAI module, and build from scratch to increase speed, even if its a few ms. Other than that, I hope you enjoy it as much as I did creating it.
