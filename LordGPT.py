@@ -83,8 +83,8 @@ check_for_updates()
 
 def prompt_user_for_config():
     api_key = input(
-        "Please enter your OPENAI API key:(Sign up for free at https://platform.openai.com/account/api-keys)  ")
-    serp_api_key = input("Please enter your SERP API key:(Sign up for free at https://serpapi.com) ")
+        "Please enter your OPENAI API key:(Sign up https://platform.openai.com/account/api-keys)  ")
+    serp_api_key = input("Please enter your SERP API key:(Sign up for free at https://serpapi.com) (Free for now, just hit space, enter) ")
 
     model = ""
     while model not in ["gpt-3.5-turbo", "gpt-4"]:
@@ -184,11 +184,11 @@ api_timeout = get_variable(env_data, "API_TIMEOUT", 90, "int")
 bd_enabled = get_variable(env_data, "BD_ENABLED", "False", "bool")
 bd_password = get_variable(env_data, "BD_PASSWORD", None)
 bd_port = get_variable(env_data, "BD_PORT", 22225, "int")
-bd_username = get_variable(env_data, "BD_USERNAME")
+bd_username = get_variable(env_data, "BD_USERNAME", None)
 debug_code = True
 frequency_penalty = get_variable(env_data, "FREQUENCY_PENALTY", 0.0, "float")
-google_api_key = get_variable(env_data, "GOOGLE_API_KEY")
-google_search_id = get_variable(env_data, "CUSTOM_SEARCH_ENGINE_ID")
+google_api_key = get_variable(env_data, "GOOGLE_API_KEY", None)
+google_search_id = get_variable(env_data, "CUSTOM_SEARCH_ENGINE_ID", None)
 max_characters = get_variable(env_data, "MAX_CHARACTERS", 1000, "int")
 max_conversation = get_variable(env_data, "MAX_CONVERSATION", 5, "int")
 max_tokens = get_variable(env_data, "MAX_TOKENS", 800, "int")
@@ -907,17 +907,18 @@ def search_engine(reasoning, command_string, command_argument, current_task, sel
     formatted_results = "Organic Results:\n"
 
     for index, result in enumerate(results["organic_results"], start=1):
+    
         formatted_results += f"{index}. Title: {result['title']}, Link: {result['link']};\n"
-
+    
     sanitized_results = json.dumps(formatted_results)
     debug_log(sanitized_results)
-    return {
-        "reasoning_80_words": "Search Results: " + sanitized_results,
-        "command_string": command_string,
-        "command_argument": command_argument,
-        "current_task": current_task,
-        "self_prompt_action": self_prompt_action
-    }
+    return create_json_message(
+        "Search Results: " + sanitized_results,  # type: ignore
+        command_string,
+        command_argument,
+        current_task,
+        self_prompt_action,
+    )
 
 
 
