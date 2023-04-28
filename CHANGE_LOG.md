@@ -4,6 +4,7 @@ UDPATE 4/28/2023
 - Added ability to change lords direction if he's screwing up. Hit no and prompt him.
 - Fixed ton's of illegal character exceptions from Browsing and Searching.
 - Tweeked prompt to generate and save tasks after completion. Almost completes goals with ZERO conversation history. Memory? Blah...
+- Playwright Browser code - We can do more options in the future like login to websites, ect.
 
 
 UPDATE 4/27/2023

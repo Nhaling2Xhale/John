@@ -29,6 +29,19 @@ from scripts.bot_prompts import command_list, bot_prompt
 from scripts.bot_commands import botcommands
 from playwright.sync_api import sync_playwright
 #endregion
+import traceback
+
+
+def log_exception(exc_type, exc_value, exc_traceback):
+    with open("exceptions.log", "a") as f:
+        f.write("\n\n" + "=" * 80 + "\n")
+        f.write(f"Exception Timestamp: {datetime.datetime.now()}\n")
+        traceback.print_exception(exc_type, exc_value, exc_traceback, file=f)
+
+
+sys.excepthook = log_exception
+
+
 
 current_path = os.getcwd()
 working_folder = os.path.join(current_path, 'LordGPT_folder')
@@ -37,7 +50,7 @@ if not os.path.exists(working_folder):
 
 # region GLOBAL VARIABLES
 config_file = "config.json"
-current_version = "1.2"
+current_version = "1.3"
 update_url = "https://thelordg.com/downloads/version.txt"
 changelog_url = "https://thelordg.com/downloads/changelog.txt"
 download_link = "https://thelordg.com/downloads/LordGPT.exe"
@@ -547,14 +560,14 @@ def run_bash_shell_command(
             shell_response = "Folder created successfully. " + command_argument
         elif (
             return_code == 1
-            and "Folder already exists navigate to folder. " in error.decode("utf-8")
+            and "Folder already exists navigate to folder. " in error.decode("utf-8", errors='replace')
         ):
             set_global_success(True)
             shell_response = (
                 "Folder already exists. Try switching to folder. " + command_argument
             )
         else:
-            shell_response = f"Error creating folder, research the error: {error.decode('utf-8').strip()}"
+            shell_response = f"Error creating folder, research the error: {error.decode('utf-8', errors='replace').strip()}"
 
     elif "touch" in command_argument:
         if return_code == 0:
@@ -562,7 +575,7 @@ def run_bash_shell_command(
             shell_response = "File created and saved successfully. " + command_argument
         else:
             set_global_success(False)
-            shell_response = f"Error creating file, Research the error: {error.decode('utf-8').strip()}"
+            shell_response = f"Error creating file, Research the error: {error.decode('utf-8', errors='replace').strip()}"
 
     else:
         if return_code == 0:
@@ -570,12 +583,12 @@ def run_bash_shell_command(
             # Add slicing to limit output length
             shell_response = (
                 "Shell Command Output: "
-                + f"{output.decode('utf-8').strip()}"[:max_characters]
+                + f"{output.decode('utf-8', errors='replace').strip()}"[:max_characters]
             )
         else:
             set_global_success(False)
             # Add slicing to limit error length
-            shell_response = f"Shell Command failed, research the error: {error.decode('utf-8').strip()}"[
+            shell_response = f"Shell Command failed, research the error: {error.decode('utf-8', errors='replace').strip()}"[
                 :max_characters
             ]
 
@@ -588,6 +601,7 @@ def run_bash_shell_command(
         self_prompt_action,
         
     )
+
 
 
 # endregion
