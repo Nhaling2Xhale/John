@@ -394,8 +394,13 @@ def query_bot(messages, retries=api_retry):
                 
                     responseparsed = response_json["choices"][0]["message"]["content"]
                     
-                    debug_log(f"Parsed Choices Node: {responseparsed}")
-                    responseformatted = json.loads(responseparsed)
+                    try:
+                        debug_log(f"Parsed Choices Node: {responseparsed}")
+                        responseformatted = json.loads(responseparsed)
+                    except:
+                        debug_log(f"Formatted non json response: {responseformatted}]")
+                        responseformatted = create_json_message(responseformatted, "None", "None", "None", "None")
+                   
                     
             
                     if responseformatted is not None:
@@ -804,7 +809,7 @@ def create_python_script(
         set_global_success(True)
 
         return create_json_message(
-            f"Python code created and saved successfully:\nFilename: {filename}\nContent:\n```python\n{content}\n```",
+            f"Python code created and saved successfully: Filename: {filename}",
             command_string,
             command_argument,
             current_task,
@@ -1169,10 +1174,26 @@ def sanitize_content(content):
     content = content.encode("ascii", "ignore").decode("ascii")
     return content
 
+
+def extract_text(html_content):
+    soup = BeautifulSoup(html_content, 'html.parser')
+
+    # Add the tags you want to extract text from in the list below
+    allowed_tags = ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'a', 'span', 'ul', 'li']
+
+    extracted_text = []
+    for tag in allowed_tags:
+        elements = soup.find_all(tag)
+        for element in elements:
+            extracted_text.append(element.get_text())
+
+    return ' '.join(extracted_text)
+
+
 def browse_website_url(reasoning, command_string, command_argument, current_task, self_prompt_action):
     def run(playwright):
         browser = playwright.chromium.launch()
-        context = browser.new_context()
+        context = browser.new_context(java_script_enabled=False)
         page = context.new_page()
 
         page.goto(command_argument)
@@ -1193,22 +1214,22 @@ def browse_website_url(reasoning, command_string, command_argument, current_task
             self_prompt_action,
         )
 
-    serialized_html = json.dumps(result)
-    sanitized_html = sanitize_content(serialized_html)
+    extracted_text = extract_text(result)
+    sanitized_text = sanitize_content(extracted_text)
 
-    if max_characters is not None and len(sanitized_html) > max_characters: #type: ignore
-        sanitized_html = sanitized_html[:max_characters]
-       
-        debug_log(sanitized_html)
+    # type: ignore
+    if max_characters is not None and len(sanitized_text) > max_characters:
+        sanitized_text = sanitized_text[:max_characters]
+
+        debug_log(sanitized_text)
 
     return create_json_message(
-        "Website Content: " + sanitized_html, #type: ignore
+        "Website Content: " + sanitized_text,  # type: ignore
         command_string,
         command_argument,
         current_task,
         self_prompt_action,
     )
-
 
 
 # endregion
