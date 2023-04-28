@@ -1,4 +1,9 @@
 
+UPDATE 4/27/2023
+- Moved Browsing to Playwright and Chrome.
+- pip install playwright
+- playwright install
+
 UPDATE: 4/27/2023
 - Windows users now have all the options in config.json
 - Prompt tweeks

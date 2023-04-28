@@ -10,3 +10,4 @@ unidecode
 requests
 python-dotenv
 yaspin
+playwright
