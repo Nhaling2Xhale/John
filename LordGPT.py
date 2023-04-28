@@ -388,7 +388,8 @@ def query_bot(messages, retries=api_retry):
                     if "error" in response_json:
                         error_message = response_json["error"]["message"]
                         print(f"Error: {error_message}")
-                        print("max_tokens is too high.....GPT3.5 is limited, so change max_tokens to a lower value.")
+                        alternate_api(api_count)
+                        
                         continue
                 
                 
@@ -398,6 +399,7 @@ def query_bot(messages, retries=api_retry):
                         debug_log(f"Parsed Choices Node: {responseparsed}")
                         responseformatted = json.loads(responseparsed)
                     except:
+                        alternate_api(api_count)
                         debug_log(f"Formatted non json response: {responseformatted}]")
                         responseformatted = create_json_message(responseformatted, "None", "None", "None", "None")
                    
@@ -870,7 +872,7 @@ def write_new_content_to_file(
 
         set_global_success(True)
         return create_json_message(
-            f"File {filename} created and saved successfully\n{content}",
+            f"File {filename} created and saved successfully.",
             command_string,
             command_argument,
             current_task,
@@ -1392,6 +1394,11 @@ def openai_bot_handler(current_prompt, message, role):
 
 
 def main_loop():
+    research_file = os.path.join(working_folder, "research.txt")
+
+    if os.path.exists(research_file):
+        os.remove(research_file)
+        print(colored("research.txt file deleted.", "green"))
 
     print(colored("Tips: ", "green"))
 
