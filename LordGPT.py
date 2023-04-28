@@ -84,7 +84,7 @@ check_for_updates()
 def prompt_user_for_config():
     api_key = input(
         "Please enter your OPENAI API key:(Sign up for free at https://platform.openai.com/account/api-keys)  ")
-    serp_api = input("Please enter your SERP API key:(Sign up for free at https://serpapi.com) ")
+    serp_api_key = input("Please enter your SERP API key:(Sign up for free at https://serpapi.com) ")
 
     model = ""
     while model not in ["gpt-3.5-turbo", "gpt-4"]:
@@ -124,8 +124,8 @@ def prompt_user_for_config():
         'OPENAI_MODEL_NAME': model,
         'OPENAI_URL': "https://api.openai.com/v1/chat/completions",
         'PRESENCE_PENALTY': 0.0,
-        'SERP_API': serpapi_key,
-        'TEMPERATURE': 0.8,
+        'SERP_API': serp_api_key,
+        'TEMPERATURE': 0.2,
         'TOP_P': 0.0,
     }
 
@@ -195,7 +195,7 @@ max_tokens = get_variable(env_data, "MAX_TOKENS", 800, "int")
 presence_penalty = get_variable(env_data, "PRESENCE_PENALTY", 0.0, "float")
 temperature = get_variable(env_data, "TEMPERATURE", 0.8, "float")
 top_p = get_variable(env_data, "TOP_P", 0.0, "float")
-serpapi_key = get_variable(env_data, "SERP_API", None)
+serp_api_key = get_variable(env_data, "SERP_API", None)
 
 
 api_count = 0
@@ -894,7 +894,7 @@ def download_file(reasoning, command_string, command_argument, current_task, sel
 
 def search_engine(reasoning, command_string, command_argument, current_task, self_prompt_action):
     params = {
-        "api_key": serpapi_key,
+        "api_key": serp_api_key,
         "engine": "duckduckgo",
         "q": command_argument,
         "kl": "us-en",
