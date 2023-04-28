@@ -24,6 +24,7 @@ import urllib.request
 
 from scripts.bot_prompts import command_list, bot_prompt
 from scripts.bot_commands import botcommands
+from playwright.sync_api import sync_playwright
 
 
 current_path = os.getcwd()
@@ -138,6 +139,7 @@ config_file = "config.json"
 
 def load_variables(frozen):
     if frozen:
+        print("Frozen Detected")
         if os.path.exists(config_file):
             config_data = load_config_from_file(config_file)
         else:
@@ -1168,50 +1170,43 @@ def sanitize_content(content):
     content = content.encode("ascii", "ignore").decode("ascii")
     return content
 
+def browse_website_url(reasoning, command_string, command_argument, current_task, self_prompt_action):
+    def run(playwright):
+        browser = playwright.chromium.launch()
+        context = browser.new_context()
+        page = context.new_page()
 
-def scrape_website_url(reasoning, command_string, command_argument, current_task, suggested_next_task):
-    try:
-        url, raw_html, max_length = command_argument.split('|')
-        max_length = int(max_length.split('=')[1])
-        responsehtml = requests.get(url, timeout=30)
-        responsehtml.raise_for_status()
-    except requests.RequestException as e:
-        return create_json_message(
-            "Error: " + f"Error: {str(e)}",
-            command_string,
-            command_argument,
-            current_task,
-            suggested_next_task,
-        )
+        page.goto(command_argument)
+        html_content = page.content()
+
+        browser.close()
+        return html_content
 
     try:
-        if raw_html.lower() == 'true':
-            content = responsehtml.text
-        else:
-            soup = BeautifulSoup(responsehtml.text, "html.parser")
-            content = soup.get_text()
-
-        content = content.replace("\n", " ")
-        debug_log(content)
-        content_cleaned = sanitize_content(content)[:max_length]
-        content_json_escaped = json.dumps(content_cleaned)
-
+        with sync_playwright() as playwright:
+            result = run(playwright)
     except Exception as e:
         return create_json_message(
-            "Error: " + str(e) +
-            "Check your argument or move on to another url.",
+            f"Error: {str(e)}",
             command_string,
             command_argument,
             current_task,
-            suggested_next_task,
+            self_prompt_action,
         )
 
+    serialized_html = json.dumps(result)
+
+    if max_characters is not None and len(serialized_html) > max_characters:
+        serialized_html = serialized_html[:max_characters]
+        website_content = json.loads(serialized_html)
+        debug_log(website_content)
+
     return create_json_message(
-        "URL: " + url + "\nContent: " + content_json_escaped,
+        "Website Content: " + website_content,
         command_string,
         command_argument,
         current_task,
-        suggested_next_task,
+        self_prompt_action,
     )
 
 
