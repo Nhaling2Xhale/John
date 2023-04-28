@@ -1,7 +1,9 @@
 UDPATE 4/28/2023
-- New file operation code. Combined all file operations into one.
-- New Search Engine, SERPA API. Sign up, free here serpaapi.com THis will allow us to tie into all sorts of search API's with a single function.
+- New file operation code. Combined all file operations into one. Prompt uses less tokens now.
+- New Search Engine, SERPA API. Sign up, free here serpaapi.com THis will allow us to tie into all sorts of search API's with a single function. (come to our discord and I'll give you a key for free to test.)
 - Added ability to change lords direction if he's screwing up. Hit no and prompt him.
+- Fixed ton's of illegal character exceptions from Browsing and Searching.
+- Tweeked prompt to generate and save tasks after completion. Almost completes goals with ZERO conversation history. Memory? Blah...
 
 
 UPDATE 4/27/2023

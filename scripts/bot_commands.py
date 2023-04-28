@@ -1,7 +1,7 @@
 botcommands = [
     {
         "command_string": "create_task_list",
-        "command_argument": "[TASKLIST]",
+        "command_argument": "'[TASKLIST]'",
         "command_description": "Replace '[TASKLIST]' with your detailed numbered task list containg subtasks to acheive the goal."
     },
     {
