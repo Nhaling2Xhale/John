@@ -12,7 +12,7 @@ botcommands = [
     },
     {
         "command_string": "convert_html_to_pdf",
-        "command_argument": "Filename: '[FILENAME]' Content: ```[HTML MARKUP]```",
+        "command_argument": "Filename: '[FILENAME.pdf]' Content: ```[HTML MARKUP]```",
         "command_description": "Create PDF's from HTML MARKUP by replacing [HTML MARKUP] as a multiline string using triple backticks (```)."
     },
     {
@@ -43,7 +43,7 @@ botcommands = [
     {
         "command_string": "browse_website_url",
         "command_argument": "'[URL]'",
-        "command_description": "Browse or scrape a url."
+        "command_description": "Browse a single url."
     },
     {
         "command_string": "save_research",
