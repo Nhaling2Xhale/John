@@ -961,9 +961,10 @@ def search_engine(reasoning, command_string, command_argument, current_task, sel
     debug_log("Search Engine Raw: ", formatted_results)
     sanitized_results = json.dumps(formatted_results)
     sanitized_content = sanitize_content(sanitized_results)
-    debug_log("Search Enginer Sanitized: ", sanitized_results)
+    stripped_content = extract_text(sanitize_content)
+    debug_log("Search Enginer Sanitized: ", sanitized_content)
     return create_json_message(
-        "Search Results: " + sanitized_content,  # type: ignore
+        "Search Results: " + stripped_content,  # type: ignore
         command_string,
         command_argument,
         current_task,
