@@ -2,7 +2,7 @@ botcommands = [
     {
         "command_string": "create_task_list",
         "command_argument": "'[TASKLIST]'",
-        "command_description": "Replace '[TASKLIST]' with your detailed numbered task list containg subtasks to acheive the goal."
+        "command_description": "Replace '[TASKLIST]' with your detailed numbered task list containg subtasks to acheive the goal. Complete each task by marking it complete."
     },
     {
         "command_string": "create_pdf_from_html",
@@ -12,7 +12,7 @@ botcommands = [
     {
         "command_string": "file_operations",
         "command_argument": "filename|```content```|operation",
-        "command_description": "Used for all file operations, Every argument must contain this format:(filename|content|operation) The filename is the name of the file you want to operate on. The content needs to be formatted text or formatted code as a multiline string using triple backticks (```). For file rename and move operations, the content needs be the new name or destination path, respectively. The following file operations are valid: 'write', 'read', 'append', 'rename', 'move', 'delete'. Read files to verify."
+        "command_description": "Used for all file operations, Every argument is required to conform to this format:(filename|```content```|operation) Filename is the name of file with ext. Content is a multiline string using triple backticks (```). For file rename and move operations, the content needs be the new name or destination path, respectively. The following file operations are valid: 'write', 'read', 'append', 'rename', 'move', 'delete'. Read files to verify."
     },
     {
         "command_string": "search_engine",

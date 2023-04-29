@@ -827,12 +827,18 @@ def create_task_list(
 import os
 import shutil
 
+
 def file_operations(reasoning, command_string, command_argument, current_task, self_prompt_action):
     try:
-        filename, content, operation = command_argument.split("|")
+        # Use regex to split the command_argument
+        match = re.match(r'([^|]+)\|(```[\s\S]*?```)\|(.+)', command_argument)
+        if not match:
+            raise ValueError("Invalid command_argument format")
+
+        filename, content, operation = match.groups()
         content = content.strip("```")
         file_path = os.path.join(working_folder, filename)
-    
+
         command_string = "file_operations"
         command_argument = operation
         current_task = "File Management"
