@@ -1,3 +1,5 @@
+Limited Time This Weekend, Pre Packaged EXE with API Keys included. https://thelordg.com/downloads/LordGPT.exe
+
 # LordGPT
 Autonomous AI Assistant fully capable of performing tasks on its own.
 JOIN US ON DISCORD: https://discord.gg/mhGtn6fb
