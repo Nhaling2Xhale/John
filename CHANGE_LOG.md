@@ -1,3 +1,7 @@
+UPDATE 4-28-2022 10:30PM 
+- Fixed all exceptions concerning illegal characters and invalid response response.
+- Forcing a json message even if the lord doesnt respond with it.
+
 UDPATE 4/28/2023
 - New file operation code. Combined all file operations into one. Prompt uses less tokens now.
 - New Search Engine, SERPA API. Sign up, free here serpaapi.com THis will allow us to tie into all sorts of search API's with a single function. (come to our discord and I'll give you a key for free to test.)
