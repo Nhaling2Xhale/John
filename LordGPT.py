@@ -21,6 +21,7 @@ from fake_useragent import UserAgent
 from unidecode import unidecode
 from yaspin import yaspin
 from serpapi import GoogleSearch
+from datetime import datetime
 
 import pdfkit
 import urllib.request
@@ -35,7 +36,7 @@ import traceback
 def log_exception(exc_type, exc_value, exc_traceback):
     with open("exceptions.log", "a") as f:
         f.write("\n\n" + "=" * 80 + "\n")
-        f.write(f"Exception Timestamp: {datetime.datetime.now()}\n")
+        f.write(f"Exception Timestamp: {datetime.now()}\n")
         traceback.print_exception(exc_type, exc_value, exc_traceback, file=f)
 
 
@@ -57,15 +58,20 @@ download_link = "https://thelordg.com/downloads/LordGPT.exe"
 message_history = []
 # endregion
 
+
 # region GLOBAL FUNCTIONS
 def debug_log(message, value=None):
+    global current_datetime
     if debug_code:
         # Create the debug.txt file path
         debug_file_path = os.path.join(working_folder, "debug.txt")
 
+        current_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
         # Write the message and value to the debug.txt file
         with open(debug_file_path, "a") as debug_file:
-            debug_file.write(f"{message}{value}\n")
+            debug_file.write(f"[{current_datetime}] {message}{value}\n\n")
+
 
     
 def set_global_success(value):
@@ -301,6 +307,29 @@ def get_random_text_and_color(text_color_dict):
 
 # endregion
 
+#region ### TEXT PARSER ###
+import re
+from bs4 import BeautifulSoup
+
+def extract_text(html_content):
+    soup = BeautifulSoup(html_content, 'html.parser')
+
+    allowed_tags = ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'a', 'span', 'ul', 'li']
+
+    extracted_text = []
+    for tag in allowed_tags:
+        elements = soup.find_all(tag)
+        for element in elements:
+            extracted_text.append(element.get_text())
+
+    cleaned_text = re.sub(r'\n|["\']', '', ' '.join(extracted_text))
+
+    # Remove spaces greater than 2
+    cleaned_text = re.sub(r' {2,}', ' ', cleaned_text)
+
+    return cleaned_text
+
+#endregion
 
 # region ### API QUERY ###
 text_color_dict = {
@@ -413,11 +442,11 @@ def query_bot(messages, retries=api_retry):
                         alternate_api(api_count)
                         debug_log(
                             f"Formatted non json response: {responseparsed}]")
-                        responseformatted = create_json_message(
-                            responseparsed, "None", "None", "None", "None")
-                   
+                        responsebad = create_json_message(
+                            responseparsed, "I need to always respond with the required json format", "No Command", "Current Task", "I need to respond in the required json format")
+                        responseformatted = json.loads(responsebad)
                     
-            
+                    debug_log("API Count: ", api_count)
                     if responseformatted is not None:
                         if "current_task" in responseformatted:
                             current_task = responseformatted["current_task"]
@@ -712,7 +741,7 @@ def self_prompt(
 
 def save_research(reasoning, command_string, command_argument, current_task, self_prompt_action):
     # Get the current datetime
-    current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     # Create the research entry with the datetime and content
     research_entry = f"DateTime: {current_time}\nContent: {command_argument.strip()}\n\n"
@@ -922,19 +951,23 @@ def search_engine(reasoning, command_string, command_argument, current_task, sel
     results = search.get_dict()
     formatted_results = "Organic Results:\n"
 
+    loop_limit = 5
+
     for index, result in enumerate(results["organic_results"], start=1):
-    
-        formatted_results += f"{index}. Title: {result['title']}, Link: {result['link']};\n"
-    
+        if index <= loop_limit:
+            formatted_results += f"{index}. Title: {result['title']}, Link: {result['link']};\n"
+        else:
+            break
+    debug_log("Search Engine Raw: ", formatted_results)
     sanitized_results = json.dumps(formatted_results)
     sanitized_content = sanitize_content(sanitized_results)
-    debug_log(sanitized_results)
+    debug_log("Search Enginer Sanitized: ", sanitized_results)
     return create_json_message(
         "Search Results: " + sanitized_content,  # type: ignore
         command_string,
         command_argument,
         current_task,
-        self_prompt_action,
+        self_prompt_action
     )
 
 
@@ -947,19 +980,8 @@ def search_engine(reasoning, command_string, command_argument, current_task, sel
 
 
 
-def extract_text(html_content):
-    soup = BeautifulSoup(html_content, 'html.parser')
 
-    # Add the tags you want to extract text from in the list below
-    allowed_tags = ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'a', 'span', 'ul', 'li']
 
-    extracted_text = []
-    for tag in allowed_tags:
-        elements = soup.find_all(tag)
-        for element in elements:
-            extracted_text.append(element.get_text())
-
-    return ' '.join(extracted_text)
 
 
 def browse_website_url(reasoning, command_string, command_argument, current_task, self_prompt_action):
@@ -1002,6 +1024,7 @@ def browse_website_url(reasoning, command_string, command_argument, current_task
         current_task,
         self_prompt_action,
     )
+
 
 
 # endregion
@@ -1173,7 +1196,7 @@ def main_loop():
     user_goal = input("Goal: ")
     print(colored("Creating detailed plan to achive the goal....", "green"))
     if not user_goal:
-        user_goal = "Provide a 5 day weather forecast for my location using the weather.gov API and save it to a PDF"
+        user_goal = "Browse 10 websites and save the data to a CSV file"
         print(colored("Goal: " + user_goal, "green"))
     set_global_success(True)
 
