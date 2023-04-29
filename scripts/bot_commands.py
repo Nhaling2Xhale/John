@@ -2,7 +2,7 @@ botcommands = [
     {
         "command_string": "create_task_list",
         "command_argument": "'[TASKLIST]'",
-        "command_description": "Replace '[TASKLIST]' with your detailed numbered task list containg subtasks to acheive the goal. Complete each task by marking it complete."
+        "command_description": "Used to create initial tasklist and complete each task item. Replace '[TASKLIST]' with your tasks and mark complete."
     },
     {
         "command_string": "create_pdf_from_html",
@@ -47,6 +47,6 @@ botcommands = [
     {
         "command_string": "mission_accomplished",
         "command_argument": "Mission accomplishment message",
-        "command_description": "Use this command only after the entire goal has been verified and completed 100%."
+        "command_description": "Use to mark the entire goal"
     },
 ]
