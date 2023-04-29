@@ -103,8 +103,8 @@ check_for_updates()
 
 def prompt_user_for_config():
     api_key = input(
-        "Please enter your OPENAI API key:(Sign up https://platform.openai.com/account/api-keys):  ")
-    serp_api_key = input("Please enter your SERP API key:(Sign up for free at https://serpapi.com) (Come to our discord and Ill give you a key for free, for now...): ")
+        "OPENAI API key:https://platform.openai.com/account/api-keys - Come to Discord for free GPT4 key:  ")
+    serp_api_key = input("SERPAPI: https://serpapi.com - Come to Discord for free key: ")
 
     model = ""
     while model not in ["gpt-3.5-turbo", "gpt-4"]:
