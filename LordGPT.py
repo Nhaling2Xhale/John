@@ -13,6 +13,8 @@ import shutil
 import requests.exceptions
 from time import sleep
 from typing import Dict
+import debugpy
+debugpy.listen(('0.0.0.0', 5678))
 
 from dotenv import load_dotenv
 from termcolor import colored
@@ -961,10 +963,9 @@ def search_engine(reasoning, command_string, command_argument, current_task, sel
     debug_log("Search Engine Raw: ", formatted_results)
     sanitized_results = json.dumps(formatted_results)
     sanitized_content = sanitize_content(sanitized_results)
-    stripped_content = extract_text(sanitize_content)
     debug_log("Search Enginer Sanitized: ", sanitized_content)
     return create_json_message(
-        "Search Results: " + stripped_content,  # type: ignore
+        "Search Results: " + sanitized_content,  # type: ignore
         command_string,
         command_argument,
         current_task,
