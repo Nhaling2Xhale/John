@@ -69,7 +69,8 @@ def debug_log(message, value=None):
         current_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         # Write the message and value to the debug.txt file
-        with open(debug_file_path, "a") as debug_file:
+        # Add the encoding parameter here
+        with open(debug_file_path, "a", encoding="utf-8") as debug_file:
             debug_file.write(f"[{current_datetime}] {message}{value}\n\n")
 
 
@@ -508,6 +509,16 @@ def create_pdf_from_html(reasoning, command_string, command_argument, current_ta
 
         content = content_match.group(1).strip()
 
+        # Check if content is [HTML MARKUP]
+        if content.lower() == "```[HTML MARKUP]```":
+            return create_json_message(
+                "Error: Invalid Content. You must replace [HTML MARKUP] with the actual HTML Markup string formatted with backtiks.",
+                command_string,
+                command_argument,
+                current_task,
+                "Google Error",
+            )
+
         # Parse the input string to extract the filename and content
         parts = command_argument.split("Content:")
         filename_part = parts[0].strip()
@@ -534,7 +545,7 @@ def create_pdf_from_html(reasoning, command_string, command_argument, current_ta
             command_string,
             command_argument,
             current_task,
-            "Ensure task is complete, then complete task.",
+            "Ensure task is complete, then regen task list as item complete.",
         )
     except Exception as e:
         debug_log(f"Error: {e}")
@@ -545,6 +556,7 @@ def create_pdf_from_html(reasoning, command_string, command_argument, current_ta
             current_task,
             "Google Error",
         )
+
 
 
 # endregion
@@ -713,8 +725,7 @@ def run_win_shell_command(
         "Windows Command Output: " + shell_cleaned,
         command_string,
         command_argument,
-        "I should analyze the output to ensure success and research any errors",
-        "Ensure task is complete, then complete task.",
+        "If success, Complete this task item and regenerate list.",
         
     )
 
@@ -766,7 +777,7 @@ def save_research(reasoning, command_string, command_argument, current_task, sel
         command_string,
         command_argument,
         current_task,
-        "Ensure task is complete, then complete task.",
+        "If success, Complete this task item and regenerate list.",
     )
 # endregion
 
@@ -794,7 +805,7 @@ def fetch_research(reasoning, command_string, command_argument, current_task, se
         command_string,
         command_argument,
         current_task,
-        "Ensure task is complete, then complete task.",
+        "If success, Complete this task item and regenerate list.",
     )
 # endregion
 
@@ -910,7 +921,7 @@ def download_file(reasoning, command_string, command_argument, current_task, sel
             command_string,
             command_argument,
             current_task,
-                "If task is complete, regenerate task list and add the filename only if it does not exist.",
+                "Regenerate task list with item completed and add the filename to the tasklist.",
             
         )
         else:
@@ -969,7 +980,7 @@ def search_engine(reasoning, command_string, command_argument, current_task, sel
         command_string,
         command_argument,
         current_task,
-        "Regenerate task list to include URL's to the task list, only if they dont exist."
+        "If success, Complete this task item and regenerate list."
     )
 
 
@@ -1005,7 +1016,7 @@ def browse_website_url(reasoning, command_string, command_argument, current_task
             self_prompt_action,
         )
 
-    extracted_text = extract_text(result)
+    extracted_text = result
 
     # Keep only A-Z, a-z, and spaces
     extracted_text = re.sub(r'[^A-Za-z\s]', '', extracted_text)
@@ -1023,7 +1034,7 @@ def browse_website_url(reasoning, command_string, command_argument, current_task
         "command_string",
         command_argument,
         current_task,
-        "Ensure task is complete, then complete task.",
+        "If success, Complete this task item and regenerate list.",
     )
 
 
