@@ -966,19 +966,13 @@ def search_engine(reasoning, command_string, command_argument, current_task, sel
         self_prompt_action
     )
 
-
-
-
 # endregion
 
 # region ### BROWSE WEBSITE ###
 
+import re
 
-
-
-
-
-
+import re
 
 def browse_website_url(reasoning, command_string, command_argument, current_task, self_prompt_action):
     def run(playwright):
@@ -1006,8 +1000,10 @@ def browse_website_url(reasoning, command_string, command_argument, current_task
 
     extracted_text = extract_text(result)
 
-    # Remove \u2019
-    extracted_text = extracted_text.replace('\u2019', "'")
+    # Keep only A-Z, a-z, and spaces
+    extracted_text = re.sub(r'[^A-Za-z\s]', '', extracted_text)
+
+    sanitized_text = extracted_text  # Initialize sanitized_text to extracted_text
 
     # type: ignore
     if max_characters is not None and len(extracted_text) > max_characters:
@@ -1025,11 +1021,9 @@ def browse_website_url(reasoning, command_string, command_argument, current_task
 
 
 
-
 # endregion
 
 # region ### MISSION ACCOMPLISHED ###
-
 
 def mission_accomplished(
     reasoning, command_string, command_argument, current_task, self_prompt_action
