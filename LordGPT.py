@@ -51,7 +51,7 @@ if not os.path.exists(working_folder):
 
 # region GLOBAL VARIABLES
 config_file = "config.json"
-current_version = "1.3"
+current_version = "1.4"
 update_url = "https://thelordg.com/downloads/version.txt"
 changelog_url = "https://thelordg.com/downloads/changelog.txt"
 download_link = "https://thelordg.com/downloads/LordGPT.exe"
@@ -534,7 +534,7 @@ def create_pdf_from_html(reasoning, command_string, command_argument, current_ta
             command_string,
             command_argument,
             current_task,
-            "Determine next task",
+            "Ensure task is complete, then complete task.",
         )
     except Exception as e:
         debug_log(f"Error: {e}")
@@ -714,7 +714,7 @@ def run_win_shell_command(
         command_string,
         command_argument,
         "I should analyze the output to ensure success and research any errors",
-        self_prompt_action,
+        "Ensure task is complete, then complete task.",
         
     )
 
@@ -766,7 +766,7 @@ def save_research(reasoning, command_string, command_argument, current_task, sel
         command_string,
         command_argument,
         current_task,
-        self_prompt_action,
+        "Ensure task is complete, then complete task.",
     )
 # endregion
 
@@ -794,7 +794,7 @@ def fetch_research(reasoning, command_string, command_argument, current_task, se
         command_string,
         command_argument,
         current_task,
-        self_prompt_action,
+        "Ensure task is complete, then complete task.",
     )
 # endregion
 
@@ -812,7 +812,7 @@ def create_task_list(
         command_string,
         command_argument,
         current_task,
-        self_prompt_action,
+        "Regenerate to add 1. Verified Detailed Task List only if its not complete, if not, double check task list to ensure its detailed enough so only one command is issued per item.",
         
     )
 
@@ -879,7 +879,7 @@ def file_operations(reasoning, command_string, command_argument, current_task, s
         operation_cleaned = json.dumps(operation_result)
         debug_log("File Operation : " + operation_cleaned + command_string + command_argument +
                   current_task + self_prompt_action)
-        return create_json_message(operation_cleaned, command_string, command_argument, operation_cleaned, "Task Successful")
+        return create_json_message(operation_cleaned, command_string, command_argument, operation_cleaned, "Ensure task is complete, then complete task.")
     except ValueError:
         debug_log("File Operation Error : " + reasoning + command_string + command_argument +
                   current_task + self_prompt_action)
@@ -910,7 +910,7 @@ def download_file(reasoning, command_string, command_argument, current_task, sel
             command_string,
             command_argument,
             current_task,
-            self_prompt_action,
+                "If task is complete, regenerate task list and add the filename only if it does not exist.",
             
         )
         else:
@@ -969,7 +969,7 @@ def search_engine(reasoning, command_string, command_argument, current_task, sel
         command_string,
         command_argument,
         current_task,
-        "Regenerate the task and add each URL as its own subtask"
+        "Regenerate task list to include URL's to the task list, only if they dont exist."
     )
 
 
@@ -1023,7 +1023,7 @@ def browse_website_url(reasoning, command_string, command_argument, current_task
         "command_string",
         command_argument,
         current_task,
-        "Mark task completed if finished.",
+        "Ensure task is complete, then complete task.",
     )
 
 
