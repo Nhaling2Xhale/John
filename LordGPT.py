@@ -1195,7 +1195,7 @@ def main_loop():
     user_goal = input("Goal: ")
     print(colored("Creating detailed plan to achive the goal....", "green"))
     if not user_goal:
-        user_goal = "Browse 10 websites and save the data to a CSV file"
+        user_goal = "Create a seperate task item for each website, browse and save the data to a txt file for 10 websites."
         print(colored("Goal: " + user_goal, "green"))
     set_global_success(True)
 
