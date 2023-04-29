@@ -934,11 +934,6 @@ def download_file(reasoning, command_string, command_argument, current_task, sel
 # region ### SEARCH ENGINE ###
 
 
-def sanitize_content(content):
-    content = unidecode(content)
-    content = content.encode("ascii", "ignore").decode("ascii")
-    return content
-
 def search_engine(reasoning, command_string, command_argument, current_task, self_prompt_action):
     params = {
         "api_key": serp_api_key,
@@ -957,34 +952,27 @@ def search_engine(reasoning, command_string, command_argument, current_task, sel
 
     for index, result in enumerate(results["organic_results"], start=1):
         if index <= loop_limit:
-            formatted_results += f"{index}. Title: {result['title']}, Link: {result['link']};"
+            formatted_results += f"{index}. Title: {result['title']}, Link: {result['link']} "
         else:
             break
     debug_log("Search Engine Raw: ", formatted_results)
     sanitized_results = json.dumps(formatted_results)
-    sanitized_content = sanitize_content(sanitized_results)
-    debug_log("Search Enginer Sanitized: ", sanitized_content)
+    debug_log("Search Enginer Sanitized: ", sanitized_results)
     return create_json_message(
-        "Search Results: " + sanitized_content,  # type: ignore
+        "Search Results: " + sanitized_results,  # type: ignore
         command_string,
         command_argument,
         current_task,
         self_prompt_action
     )
 
-
-
-
 # endregion
 
 # region ### BROWSE WEBSITE ###
 
+import re
 
-
-
-
-
-
+import re
 
 def browse_website_url(reasoning, command_string, command_argument, current_task, self_prompt_action):
     def run(playwright):
@@ -1011,11 +999,15 @@ def browse_website_url(reasoning, command_string, command_argument, current_task
         )
 
     extracted_text = extract_text(result)
-    sanitized_text = sanitize_content(extracted_text)
+
+    # Keep only A-Z, a-z, and spaces
+    extracted_text = re.sub(r'[^A-Za-z\s]', '', extracted_text)
+
+    sanitized_text = extracted_text  # Initialize sanitized_text to extracted_text
 
     # type: ignore
-    if max_characters is not None and len(sanitized_text) > max_characters:
-        sanitized_text = sanitized_text[:max_characters]
+    if max_characters is not None and len(extracted_text) > max_characters:
+        sanitized_text = extracted_text[:max_characters]
 
         debug_log(sanitized_text)
 
@@ -1032,7 +1024,6 @@ def browse_website_url(reasoning, command_string, command_argument, current_task
 # endregion
 
 # region ### MISSION ACCOMPLISHED ###
-
 
 def mission_accomplished(
     reasoning, command_string, command_argument, current_task, self_prompt_action
