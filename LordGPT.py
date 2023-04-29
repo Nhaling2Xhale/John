@@ -889,7 +889,7 @@ def file_operations(reasoning, command_string, command_argument, current_task, s
     
         operation_cleaned = json.dumps(operation_result)
         debug_log("File Operation : " + operation_cleaned + command_string + command_argument +
-                  current_task + self_prompt_action)
+                  current_task + "Complete: Regenerate task list with item completed and add the filename to the tasklist.")
         return create_json_message(operation_cleaned, command_string, command_argument, operation_cleaned, "Ensure task is complete, then complete task.")
     except ValueError:
         debug_log("File Operation Error : " + reasoning + command_string + command_argument +
