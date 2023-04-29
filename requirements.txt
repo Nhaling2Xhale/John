@@ -12,4 +12,3 @@ python-dotenv
 yaspin
 playwright
 google-search-results
-debugpy

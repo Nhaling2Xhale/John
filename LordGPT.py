@@ -13,8 +13,6 @@ import shutil
 import requests.exceptions
 from time import sleep
 from typing import Dict
-import debugpy
-debugpy.listen(('0.0.0.0', 5678))
 
 from dotenv import load_dotenv
 from termcolor import colored
@@ -480,7 +478,7 @@ def query_bot(messages, retries=api_retry):
         
                 except Exception as e:
                     if attempt < retries - 1: #type: ignore
-                        print(f"API Exception: {str(e)}...Retrying...")
+                        print(f"API Timeout, increase your timeout: {str(e)}...Retrying...")
                         alternate_api(api_count)
                         time.sleep(2**attempt)
                     else:
@@ -958,7 +956,9 @@ def search_engine(reasoning, command_string, command_argument, current_task, sel
 
     for index, result in enumerate(results["organic_results"], start=1):
         if index <= loop_limit:
-            formatted_results += f"{index}. Title: {result['title']}, Link: {result['link']} "
+            title = result['title'].replace('\n', '').replace('\\n', '')
+            link = result['link'].replace('\n', '').replace('\\n', '')
+            formatted_results += f"{index}. Title: {title}, Link: {link} "
         else:
             break
     debug_log("Search Engine Raw: ", formatted_results)
@@ -969,8 +969,9 @@ def search_engine(reasoning, command_string, command_argument, current_task, sel
         command_string,
         command_argument,
         current_task,
-        self_prompt_action
+        "Regenerate the task and add each URL as its own subtask"
     )
+
 
 # endregion
 
@@ -1019,10 +1020,10 @@ def browse_website_url(reasoning, command_string, command_argument, current_task
 
     return create_json_message(
         "Website Content: " + sanitized_text,  # type: ignore
-        command_string,
+        "command_string",
         command_argument,
         current_task,
-        self_prompt_action,
+        "Mark task completed if finished.",
     )
 
 
