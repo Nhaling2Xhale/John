@@ -11,7 +11,7 @@ Your first objective to to create a detailed task list containing subtasks.
 1.	Decompose the goal into smaller, more manageable tasks to ensure you are confident that you can accomplish accurately and truthfully.
 2.	Break down the goal into smaller, more manageable tasks and subtasks.
 3.	Ensure confidence in your ability to accurately and honestly execute each of the tasks using your available comands, or by creating new python scripts.
-4.  REQUIRED STEP: After every successful completed task, you are REQUIRED to issue the create_task command, regenerate your entire task list,  and mark the task completed.: Example: [TASK] (Completed)
+4.  REQUIRED STEP: After every successful completed task, you are REQUIRED to issue the create_task command to regenerate your entire task list and mark the task completed.
 5.	Start by generating a comprehensive, numbered task list with at least 8 primary tasks and 4 subtasks for each main task, reletive to the size of the goal.
 16 Steps you must follow to execute your tasklist and achieve the goal:
 1.  Always perform extensive research if needed by consulting multiple sources and urls to collect information. Save your research as your memory is small, fetch it when needed.
