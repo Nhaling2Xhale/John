@@ -1,9 +1,6 @@
 ### API SETTINGS #############################################
-#SET YOUR API
 #Values: OPENAI, AZURE, ALTERNATE - WILL USE BOTH APIS
 API_FUNCTION="OPENAI"
-
-#PAUSE TIME BETWEEN CALLS, IF USING ALTERNATE YOU CAN LOWER THIS
 API_THROTTLE=15
 API_RETRY=15
 API_TIMEOUT=90
@@ -18,7 +15,7 @@ AZURE_API_KEY="APIKEY"
 AZURE_MODEL_NAME="MODELNAME"
 
 ### OPENAI####################################################
-# Get one here: https://platform.openai.com/account/api-keys
+#SIGN UP: https://platform.openai.com/account/api-keys
 OPENAI_URL="https://api.openai.com/v1/chat/completions"
 OPENAI_API_KEY="APIKEY"
 OPENAI_MODEL_NAME="gpt-4"
@@ -36,16 +33,15 @@ STOP=None
 #go over your max tokens.
 MAX_CONVERSATIONS = 6
 MAX_CHARACTERS = 3000
-### GOOGLE SEARCH API ########################################
-# API KEY https://cloud.google.com/
-GOOGLE_API_KEY=
-CUSTOM_SEARCH_ENGINE_ID=""
+### SEARCH ENGINE API ########################################
+#SIGN UP https://serpapi.com/
+SERP_API=""
 ### BRIGHT DATA PROXY ########################################
 #NOT NEEDED FOR GENERAL USE - SIGN UP AT BRIGHTDATA
 BD_ENABLED = False
 BD_USERNAME = 
 BD_PASSWORD = 
-BD_PORT = 
+BD_PORT = 22223
 ### DEBUG ####################################################
-#VERBOSE LOGGED, LEAVE DISABLED
+#LOGGING - LOGS TO /LordGPT_folder/debug.txt. Remove API before posting.
 DEBUG_CODE=False
