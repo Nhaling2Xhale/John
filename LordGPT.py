@@ -69,7 +69,8 @@ def debug_log(message, value=None):
         current_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         # Write the message and value to the debug.txt file
-        with open(debug_file_path, "a") as debug_file:
+        # Add the encoding parameter here
+        with open(debug_file_path, "a", encoding="utf-8") as debug_file:
             debug_file.write(f"[{current_datetime}] {message}{value}\n\n")
 
 
