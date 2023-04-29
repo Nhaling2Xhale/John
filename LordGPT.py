@@ -957,7 +957,7 @@ def search_engine(reasoning, command_string, command_argument, current_task, sel
 
     for index, result in enumerate(results["organic_results"], start=1):
         if index <= loop_limit:
-            formatted_results += f"{index}. Title: {result['title']}, Link: {result['link']};\n"
+            formatted_results += f"{index}. Title: {result['title']}, Link: {result['link']};"
         else:
             break
     debug_log("Search Engine Raw: ", formatted_results)
