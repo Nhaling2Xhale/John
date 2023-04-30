@@ -1035,36 +1035,39 @@ elif search_engine_mode == "SERP":
             "safe": "-2",
             "num": 5
         }
-
+    
         search = GoogleSearch(params)
         results = search.get_dict()
-        formatted_results = "Organic Results:\n"
-
+        formatted_results = []
+    
         loop_limit = 5
-
+    
         for index, result in enumerate(results["organic_results"], start=1):
             if index <= loop_limit:
-                title = result['title'].replace('\n', '').replace('\\n', '')
-                link = result['link'].replace('\n', '').replace('\\n', '')
-                formatted_results += f"{index}. Title: {title}, Link: {link} "
-            else:
-                return create_json_message(
-                    "Error: Search Error, try another serach term.",
-                    command_string,
-                    command_argument,
-                    current_task,
-                    "Retry or choose another search term."
-                )
-
+                title = result['title'].replace('\n', '').replace('\n', '')
+                link = result['link'].replace('\n', '').replace('\n', '')
+                formatted_results.append({"index": index, "title": title, "link": link})
+    
+        if not formatted_results:
+            debug_log("SERP Error: ", formatted_results)
+            return create_json_message(
+                "Error: Search Error, try another search term.",
+                command_string,
+                command_argument,
+                current_task,
+                "Retry or choose another search term."
+            )
+    
         sanitized_results = json.dumps(formatted_results)
         debug_log("SERP Sanitized: ", sanitized_results)
         return create_json_message(
-            "Search Results: " + sanitized_results,  # type: ignore
+            "Search Results: " + sanitized_results,
             command_string,
             command_argument,
             current_task,
             "If success, Regenerate task list and mark this task complete."
         )
+    
 
 
 # endregion
