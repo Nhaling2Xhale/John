@@ -804,10 +804,14 @@ def create_task_list(
 def file_operations(reasoning, command_string, command_argument, current_task, self_prompt_action):
     try:
         # Use regex to split the command_argument
-        match = re.match(r'([^|]+)\|(```[\s\S]*?```)\|(.+)', command_argument)
+        match = re.match(r'([^|]+)\|(?:(```[\s\S]*?```)|)\|(.+)', command_argument)
         if not match:
             return create_json_message("Error: Every argument must contain this format:(filename|```content```|operation) The filename is the name of the file you want to operate on. The content needs to be formatted text or formatted code as a multiline string using triple backticks (```). For file rename and move operations, the content needs be the new name or destination path, respectively. The following file operations are valid: 'write', 'read', 'append', 'rename', 'move', 'delete'. Read files to verify.", command_string, command_argument, current_task, "Retry using a valid file_operation format and operation")
-
+    
+        filename, content, operation = match.groups()
+        content = content.strip("```") if content else ""
+        # Rest of the code...
+    
         filename, content, operation = match.groups()
         content = content.strip("```")
         file_path = os.path.join(working_folder, filename)
