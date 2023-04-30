@@ -383,7 +383,7 @@ def extract_text(html_content):
 # region ### API QUERY ###
 text_color_dict = {
     "Questing with LordGPT............": "light_blue",
-    "Hi, I'm autoGPT and I will generate a file..Hi, I'm autoGPT and I will generate a file...Hi, I'm autoGPT and I will generate a file..Hi, I'm autoGPT and I will generate a file.Hi, I'm autoGPT and I will generate a file.": "light_blue",
+    "Hello????........................": "light_blue",
     "Restoring LordGPT save files.....": "light_blue",
     "LordGPT speedrunning loading.....": "light_blue",
     "Swapping LordGPT memory cards....": "light_blue",
