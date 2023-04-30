@@ -297,7 +297,7 @@ def typing_print(text, color=None):
 
 
 def print_bot_response(reasoning, command_string, command_argument, current_task, self_prompt_action):
-    print(colored("LordGPT Thoughts: ", color="yellow"), end="")
+    print(colored("\nLordGPT Thoughts: ", color="yellow"), end="")
     typing_print(str(reasoning))
     print(colored("Currently :       ", color="green"), end="")
     typing_print(str(current_task) + "")
@@ -323,14 +323,14 @@ def create_json_message(
     self_prompt_action="[SELF PROMPT NEXT ACTION]",
 ):
     json_message = {
-        "reasoning_80_words": reasoning_80_words,
-        "command_string": command_string,
-        "command_argument": command_argument,
-        "current_task": current_task,
-        "self_prompt_action": self_prompt_action,
+        "reasoning_80_words": reasoning_80_words + " ",
+        "command_string": command_string + " ",
+        "command_argument": command_argument + " ",
+        "current_task": current_task + " ",
+        "self_prompt_action": self_prompt_action + " ",
     }
+    debug_log("JSON CREATE FUNCTION: ", json_message)
     return json.dumps(json_message)
-
 
 # Get random user agent function
 def get_random_user_agent():
@@ -516,11 +516,10 @@ def query_bot(messages, retries=api_retry):
 
                 except:
                     alternate_api(api_count)
-                    debug_log(
-                        f"Formatted non json response: {responseparsed}]")
-                    responsebad = create_json_message(
-                        responseparsed, "I need to always respond with the required json format", "No Command", "Current Task", "I need to respond in the required json format")
-                    responseformatted = json.loads(responsebad)
+                    debug_log(f"LordGPT Responsed with invalid json, but we will fix on our end.: {responseparsed}]")
+                    print("LordGPT Responsed with invalid json, but we will fix on our end.")
+                    fixed_response = create_json_message(responseparsed)       
+                    responseformatted = json.loads(fixed_response)
 
                 debug_log("API Count: ", api_count)
                 if responseformatted is not None:
@@ -818,31 +817,31 @@ def file_operations(reasoning, command_string, command_argument, current_task, s
             if operation == "write":
                 with open(file_path, "w") as file:
                     file.write(content)
-                operation_result = "File Written Successfully"
+                operation_result = "File Written Successfully! "
             elif operation == "read":
                 with open(file_path, "r") as file:
                     read_content = file.read()
-                operation_result = "File Content: " + read_content
+                operation_result = read_content
             elif operation == "append":
                 with open(file_path, "a") as file:
                     file.write(content)
-                operation_result = "File Content appended successfully"
+                operation_result = "File Content appended successfully! "
             elif operation == "rename":
                 new_name = content.strip()
                 new_path = os.path.join(working_folder, new_name)
                 os.rename(file_path, new_path)
-                operation_result = "File Renamed: " + new_name
+                operation_result = "File Renamed: " + new_name + " "
             elif operation == "move":
                 destination_path = content.strip()
                 destination_path = os.path.join(
                     working_folder, destination_path)
                 shutil.move(file_path, destination_path)
-                operation_result = "File Moved: " + destination_path
+                operation_result = "File Moved: " + destination_path + " "
             elif operation == "delete":
                 os.remove(file_path)
-                operation_result = "File Deleted: " + file_path
+                operation_result = "File Deleted: " + file_path + " "
             else:
-                return create_json_message("Invalid file operation: Every argument must contain this format:(filename|```content```|operation) The filename is the name of the file you want to operate on. The content needs to be formatted text or formatted code as a multiline string using triple backticks (```). For file rename and move operations, the content needs be the new name or destination path, respectively. The following file operations are valid: 'write', 'read', 'append', 'rename', 'move', 'delete'. Read files to verify.", command_string, command_argument, current_task, "Retry using a valid file_operation format and operation")
+                return create_json_message("Invalid file operation: Every argument must contain this format:(filename|```content```|operation) The filename is the name of the file you want to operate on. The content needs to be formatted text or formatted code as a multiline string using triple backticks (```). For file rename and move operations, the content needs be the new name or destination path, respectively. The following file operations are valid: 'write', 'read', 'append', 'rename', 'move', 'delete'. Read files to verify. ", command_string, command_argument, current_task, " Retry using a valid file_operation format and operation ")
         except FileNotFoundError:
             debug_log("File Operation Error : Folder does not exist" + command_string + command_argument +
                       current_task + self_prompt_action)
@@ -851,11 +850,11 @@ def file_operations(reasoning, command_string, command_argument, current_task, s
         operation_cleaned = json.dumps(operation_result)
         debug_log("File Operation : " + operation_cleaned + command_string + command_argument +
                   current_task + "Complete: Regenerate task list with item completed and add the filename to the tasklist.")
-        return create_json_message(operation_cleaned, command_string, command_argument, operation_cleaned, "If success, Regenerate task list and mark task " + current_task + " completed.")
+        return create_json_message(operation_cleaned, command_string, command_argument, current_task, "If success, Regenerate task list and mark task " + current_task + " completed with the filename included in the task.")
     except ValueError:
         debug_log("File Operation Error : " + reasoning + command_string + command_argument +
                   current_task + self_prompt_action)
-        return create_json_message("Error: Every argument must contain this format:(filename|```content```|operation) The filename is the name of the file you want to operate on. The content needs to be formatted text or formatted code as a multiline string using triple backticks (```). For file rename and move operations, the content needs be the new name or destination path, respectively. The following file operations are valid: 'write', 'read', 'append', 'rename', 'move', 'delete'. Read files to verify.", command_string, command_argument, current_task, "Retry using a valid file_operation format and operation")
+        return create_json_message("Error: Every argument must contain this format:(filename|```content```|operation) The filename is the name of the file you want to operate on. The content needs to be formatted text or formatted code as a multiline string using triple backticks (```). For file rename and move operations, the content needs be the new name or destination path, respectively. The following file operations are valid: 'write', 'read', 'append', 'rename', 'move', 'delete'. Read files to verify. ", command_string, command_argument, current_task, " Retry using a valid file_operation format and operation ")
 
 # endregion
 
@@ -1198,7 +1197,7 @@ def main_loop():
     set_global_success(True)
     alternate_api(api_count)
     bot_send = openai_bot_handler(
-        bot_prompt + user_goal, f"""{{"reasoning_80_words": "Respond with your detailed formatted task list for the goal by replacing [TASKLIST]", "command_string": "[COMMAND]", "command_argument": "[ARGUMENT]", "current_task": "[CURRENT TASK]", "self_prompt_action": "[SELF PROMPT NEXT ACTION]"}}""", "assistant")
+        bot_prompt + user_goal, f"""{{"reasoning_80_words": "Respond with a detailed formatted task list to ensure only one command is needed per item, replace [TASKLIST]", "command_string": "[COMMAND]", "command_argument": "[ARGUMENT]", "current_task": "[CURRENT TASK]", "self_prompt_action": "[SELF PROMPT NEXT ACTION]"}}""", "assistant")
 
     while True:
         num_input = input(
