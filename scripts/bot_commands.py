@@ -35,14 +35,9 @@ botcommands = [
         "command_description": "Fetch all research data to use in PDF report."
     },
     {
-        "command_string": "run_bash_shell_command",
-        "command_argument": "[BASH COMMAND]",
-        "command_description": "Execute non-interactive bash command. Use Curl to download a non html file. Location Lookup: curl ifconfig.co/json"
-    },
-    {
-        "command_string": "run_win_shell_command",
-        "command_argument": "[WIN COMMAND]",
-        "command_description": "Execute non-interactive windows command. Use Curl to download a non html file. Location Lookup: curl ifconfig.co/json"
+        "command_string": "run_shell_command",
+        "command_argument": "[SHELLCOMMAND]",
+        "command_description": "Execute non-interactive command, first determine which OS you are on. Use Curl to download a non html file. Location Lookup: curl ifconfig.co/json"
     },
     {
         "command_string": "mission_accomplished",

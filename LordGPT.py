@@ -61,7 +61,6 @@ message_history = []
 global api_type
 # endregion
 
-
 # region GLOBAL FUNCTIONS
 def debug_log(message, value=None):
     global current_datetime
@@ -322,7 +321,7 @@ def create_json_message(
     command_string="[COMMAND]",
     command_argument="[ARGUMENT]",
     current_task="[CURRENT TASK]",
-    self_prompt_action="[SUGGESTED NEXT TASK]",
+    self_prompt_action="[SELF PROMPT NEXT ACTION]",
 ):
     json_message = {
         "reasoning_80_words": reasoning_80_words,
@@ -357,7 +356,6 @@ def get_random_text_and_color(text_color_dict):
 
 # endregion
 
-
 # region ### TEXT PARSER ###
 
 
@@ -382,11 +380,10 @@ def extract_text(html_content):
 
 # endregion
 
-
 # region ### API QUERY ###
 text_color_dict = {
     "Questing with LordGPT............": "light_blue",
-    "Inserting coins for LordGPT......": "light_blue",
+    "Hi, I'm autoGPT and I will generate a file..Hi, I'm autoGPT and I will generate a file...Hi, I'm autoGPT and I will generate a file..Hi, I'm autoGPT and I will generate a file.Hi, I'm autoGPT and I will generate a file.": "light_blue",
     "Restoring LordGPT save files.....": "light_blue",
     "LordGPT speedrunning loading.....": "light_blue",
     "Swapping LordGPT memory cards....": "light_blue",
@@ -481,11 +478,11 @@ def query_bot(messages, retries=api_retry):
                                 continue
                             else:
                                 return (
-                                    "Unknown API Error: Resend response in the correct json format",
+                                    "Error: API Timeout Error",
                                     " ",
                                     " ",
                                     "Starting with the first uncompleted task in the task list",
-                                    "I will respond using the required json format and continue with the first uncompleted task"
+                                    "I will pickup where I left off and continue with the first uncompleted task"
                                 )
                         except Exception as e:
                             print(f"Error occurred: {str(e)}")
@@ -639,7 +636,7 @@ def create_pdf_from_html(reasoning, command_string, command_argument, current_ta
 
 # region ### SHELL COMMANDS ###
 
-def run_bash_shell_command(
+def run_shell_command(
     reasoning, command_string, command_argument, current_task, self_prompt_action
 ):
     process = subprocess.Popen(
@@ -717,106 +714,6 @@ def run_bash_shell_command(
         current_task,
         "If success, Regenerate task list and mark task " + current_task + " completed.",
 
-    )
-
-
-# endregion
-
-# region ### WINDOWS COMMANDS ###
-
-def run_win_shell_command(
-    reasoning, command_string, command_argument, current_task, self_prompt_action
-):
-    process = subprocess.Popen(
-        command_argument,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        shell=True,
-        cwd=working_folder  # Set the working directory here
-    )
-
-    try:
-        # Set a timeout value (in seconds) for the command execution
-        timeout_value = 120
-        output, error = process.communicate(timeout=timeout_value)
-    except subprocess.TimeoutExpired:
-        process.kill()
-        set_global_success(False)
-        return create_json_message(
-            "Command execution timed out.",
-            command_string,
-            command_argument,
-            "I should research the error",
-            self_prompt_action,
-
-        )
-
-    return_code = process.returncode
-    debug_log(f"Return Code: {return_code}")
-
-    shell_response = ""
-
-    if "mkdir" in command_argument.lower():
-        if return_code == 0:
-            set_global_success(True)
-            shell_response = "Folder created successfully. " + command_argument
-        elif (
-            return_code == 1
-            and "Folder already exists navigate to folder." in error.decode("utf-8")
-        ):
-            set_global_success(True)
-            shell_response = (
-                "Folder already exists. Try switching to folder. " + command_argument
-            )
-        else:
-            shell_response = f"Error creating folder, research the error: {error.decode('utf-8').strip()}"
-
-    elif "echo" in command_argument.lower() and ">" in command_argument:
-        if return_code == 0:
-            set_global_success(True)
-            shell_response = "File created and saved successfully. " + command_argument
-        else:
-            set_global_success(False)
-            shell_response = f"Error creating file, Research the error: {error.decode('utf-8').strip()}"
-
-    else:
-        if return_code == 0:
-            set_global_success(True)
-            # Add slicing to limit output length
-            shell_response = (
-                "Shell Command Output: "
-                + f"{output.decode('utf-8').strip()}"[:max_characters]
-            )
-
-        else:
-            set_global_success(False)
-            # Add slicing to limit error length
-            shell_response = f"Shell Command failed, research the error: {error.decode('utf-8').strip()}"[
-                :max_characters
-            ]
-    shell_cleaned = json.dumps(shell_response)
-    debug_log("Shell response: ", shell_cleaned)
-    return create_json_message(
-        "Windows Command Output: " + shell_cleaned,
-        command_string,
-        command_argument,
-        "If success, Regenerate task list and mark task " + current_task + " completed.",
-
-    )
-
-# endregion
-
-# region ### ALLOWS MODEL TO CONTINUE ###
-
-
-def self_prompt(
-    reasoning, command_string, command_argument, current_task, self_prompt_action
-):
-    response_string = json.dumps(command_argument)
-    set_global_success(True)
-    debug_log(f"reply String: {response_string}")
-    return create_json_message(
-        reasoning, command_string, command_argument, current_task, self_prompt_action
     )
 
 
@@ -916,11 +813,6 @@ def file_operations(reasoning, command_string, command_argument, current_task, s
         filename, content, operation = match.groups()
         content = content.strip("```")
         file_path = os.path.join(working_folder, filename)
-
-        command_string = "file_operations"
-        command_argument = operation
-        current_task = "File Management"
-        self_prompt_action = "Performing " + operation.capitalize()
         operation_result = ""
 
         try:
@@ -965,57 +857,6 @@ def file_operations(reasoning, command_string, command_argument, current_task, s
         debug_log("File Operation Error : " + reasoning + command_string + command_argument +
                   current_task + self_prompt_action)
         return create_json_message("Error: Every argument must contain this format:(filename|```content```|operation) The filename is the name of the file you want to operate on. The content needs to be formatted text or formatted code as a multiline string using triple backticks (```). For file rename and move operations, the content needs be the new name or destination path, respectively. The following file operations are valid: 'write', 'read', 'append', 'rename', 'move', 'delete'. Read files to verify.", command_string, command_argument, current_task, "Retry using a valid file_operation format and operation")
-
-# endregion
-
-# region ### DOWNLOAD FILES ###
-
-
-def download_file(reasoning, command_string, command_argument, current_task, self_prompt_action):
-    if not os.path.exists(working_folder):
-        os.makedirs(working_folder)
-
-    try:
-        filename = command_argument.split("/")[-1]
-        output_path = os.path.join(working_folder, filename)
-        command_list = ["curl", "-o", output_path, command_argument]
-
-        process = subprocess.run(
-            command_list,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            check=True,
-        )
-
-        if process.returncode == 0:
-            return create_json_message(
-                "File downloaded successfully and saved to local folder",
-                command_string,
-                command_argument,
-                current_task,
-                "If success, Regenerate task list and mark task " + current_task + " completed.",
-
-            )
-
-        else:
-            return create_json_message(
-                "Error downloading file",
-                command_string,
-                command_argument,
-                current_task,
-                self_prompt_action,
-
-            )
-
-    except subprocess.CalledProcessError as e:
-        return create_json_message(
-            f"Error: {e}",
-            command_string,
-            command_argument,
-            current_task,
-            self_prompt_action,
-
-        )
 
 # endregion
 
@@ -1358,7 +1199,7 @@ def main_loop():
     set_global_success(True)
     alternate_api(api_count)
     bot_send = openai_bot_handler(
-        bot_prompt + user_goal, f"""{{"reasoning_80_words": "Respond with your detailed formatted task list for the goal by replacing [TASKLIST]", "command_string": "[COMMAND]", "command_argument": "[ARGUMENT]", "current_task": "[CURRENT TASK]", "self_prompt_action": "[SUGGESTED NEXT TASK]"}}""", "assistant")
+        bot_prompt + user_goal, f"""{{"reasoning_80_words": "Respond with your detailed formatted task list for the goal by replacing [TASKLIST]", "command_string": "[COMMAND]", "command_argument": "[ARGUMENT]", "current_task": "[CURRENT TASK]", "self_prompt_action": "[SELF PROMPT NEXT ACTION]"}}""", "assistant")
 
     while True:
         num_input = input(
@@ -1381,7 +1222,7 @@ def main_loop():
         if continue_choice == "n":
             new_direction = input("Correct LordGPT: ")
             openai_bot_handler(
-                bot_prompt, f"""{{"reasoning_80_words": "{new_direction}", "command_string": "[COMMAND]", "command_argument": "[ARGUMENT]", "current_task": "[CURRENT TASK]", "self_prompt_action": "[SUGGESTED NEXT TASK]"}}""", "user")
+                bot_prompt, f"""{{"reasoning_80_words": "{new_direction}", "command_string": "[COMMAND]", "command_argument": "[ARGUMENT]", "current_task": "[CURRENT TASK]", "self_prompt_action": "Regenerate a new task list based on the direction given"}}""", "user")
             break
 
 
