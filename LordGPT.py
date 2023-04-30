@@ -34,7 +34,7 @@ from playwright.sync_api import sync_playwright
 from scripts.bot_prompts import command_list, bot_prompt
 from scripts.bot_commands import botcommands
 # endregion
-current_version = "1.8.2"
+current_version = "1.8.3"
 
 def log_exception(exc_type, exc_value, exc_traceback):
     with open("exceptions.log", "a") as f:
@@ -518,7 +518,7 @@ def query_bot(messages, retries=api_retry):
                     alternate_api(api_count)
                     debug_log(f"LordGPT Responsed with invalid json, but we will fix on our end.: {responseparsed}]")
                     print("LordGPT Responsed with invalid json, but we will fix on our end.")
-                    fixed_response = create_json_message(responseparsed)       
+                    fixed_response = create_json_message("Format all responses as the required json format and resend previous reply", "Resend last command", "resend last argument", "repeate the current task", "I will only respond using the required json format from now on")       
                     responseformatted = json.loads(fixed_response)
 
                 debug_log("API Count: ", api_count)
@@ -999,10 +999,10 @@ def browse_website_url(reasoning, command_string, command_argument, current_task
             self_prompt_action,
         )
 
-    extracted_text = result
+    extracted_text = extract_text(result)
 
     # Keep only A-Z, a-z, and spaces
-    extracted_text = re.sub(r'[^A-Za-z\s]', '', extracted_text)
+    #extracted_text = re.sub(r'[^A-Za-z\s]', '', extracted_text)
 
     # Initialize sanitized_text to extracted_text
     sanitized_text = json.dumps(extracted_text)
@@ -1011,11 +1011,11 @@ def browse_website_url(reasoning, command_string, command_argument, current_task
     if max_characters is not None and len(extracted_text) > max_characters:
         sanitized_text = extracted_text[:max_characters]
 
-        debug_log("Browse URL: ", sanitized_text)
+        debug_log("Browse URL Sanitized Text: ", sanitized_text)
 
     return create_json_message(
         "Website Content: " + sanitized_text,  # type: ignore
-        "command_string",
+        command_string,
         command_argument,
         current_task,
         "If success, Regenerate task list and mark task " + current_task + " completed.",
@@ -1094,7 +1094,7 @@ def command_handler(
             + command_string
             + " is not a valid command_string."
         )
-        return create_json_message("The command_string " + command_string + " is not a valid command string.", command_string, command_argument, current_task, "Double check the command string and format")
+        return create_json_message("The command_string " + command_string + " is not a valid command string.", command_string, command_argument, current_task, "Double check the command string and respond in the required json format.")
     return function(
         reasoning, command_string, command_argument, current_task, self_prompt_action
     )
