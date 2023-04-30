@@ -111,11 +111,14 @@ def prompt_user_for_config():
         google_api_key = input("Please enter your Google API key: ")
         google_search_id = input("Please enter your Google Search ID: ")
         search_engine_mode = "GOOGLE"
+        serp_api_key = None
 
 
     elif search_engine_choice.lower() == "serp":
         serp_api_key = input("Please enter your SERP API key: ")
         search_engine_mode = "SERP"
+        google_api_key = None
+        google_search_id = None
     else:
         print("Invalid choice. Please choose either 'Google' or 'SERP'.")
 
