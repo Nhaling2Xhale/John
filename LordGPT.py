@@ -104,8 +104,8 @@ check_for_updates()
 
 def prompt_user_for_config():
     api_key = input(
-        "OPENAI API key:https://platform.openai.com/account/api-keys - Come to Discord for free GPT4 key:  ")
-    serp_api_key = input("SERPAPI: https://serpapi.com - Come to Discord for free key: ")
+        "OPENAI API key:https://platform.openai.com/account/api-keys - Come to our discord and message Cytranic to borrow a key:  ")
+    serp_api_key = "63c76e3a703b7c4f5df0c02520e2234bdc5cdda0989c65452689c41e61a74b2c"
 
     model = ""
     while model not in ["gpt-3.5-turbo", "gpt-4"]:
@@ -971,7 +971,13 @@ def search_engine(reasoning, command_string, command_argument, current_task, sel
             link = result['link'].replace('\n', '').replace('\\n', '')
             formatted_results += f"{index}. Title: {title}, Link: {link} "
         else:
-            break
+            return create_json_message(
+                "Error: Search Error, try another serach term.",
+                command_string,
+                command_argument,
+                current_task,
+                "Retry or choose another search term."
+            )
     debug_log("Search Engine Raw: ", formatted_results)
     sanitized_results = json.dumps(formatted_results)
     debug_log("Search Enginer Sanitized: ", sanitized_results)
