@@ -51,7 +51,7 @@ if not os.path.exists(working_folder):
 
 # region GLOBAL VARIABLES
 config_file = "config.json"
-current_version = "1.4"
+current_version = "1.6"
 update_url = "https://thelordg.com/downloads/version.txt"
 changelog_url = "https://thelordg.com/downloads/changelog.txt"
 download_link = "https://thelordg.com/downloads/LordGPT.exe"
@@ -105,7 +105,19 @@ check_for_updates()
 def prompt_user_for_config():
     api_key = input(
         "OPENAI API key:https://platform.openai.com/account/api-keys - Come to our discord and message Cytranic to borrow a key:  ")
-    serp_api_key = "63c76e3a703b7c4f5df0c02520e2234bdc5cdda0989c65452689c41e61a74b2c"
+    search_engine_choice = input(
+        "Which search engine do you want to use? (Google/SERP): ")
+    if search_engine_choice.lower() == "google":
+        google_api_key = input("Please enter your Google API key: ")
+        google_search_id = input("Please enter your Google Search ID: ")
+        search_engine_mode = "GOOGLE"
+
+
+    elif search_engine_choice.lower() == "serp":
+        serp_api_key = input("Please enter your SERP API key: ")
+        search_engine_mode = "SERP"
+    else:
+        print("Invalid choice. Please choose either 'Google' or 'SERP'.")
 
     model = ""
     while model not in ["gpt-3.5-turbo", "gpt-4"]:
@@ -146,6 +158,9 @@ def prompt_user_for_config():
         'SERP_API': serp_api_key,
         'TEMPERATURE': 0.2,
         'TOP_P': 0.0,
+        'SEARCH_ENGINE_MODE': search_engine_mode,
+        'GOOGLE_API_KEY': google_api_key,
+        'CUSTOM_SEARCH_ENGINE_ID': google_search_id,
     }
 
 
@@ -212,7 +227,11 @@ max_tokens = get_variable(env_data, "MAX_TOKENS", 800, "int")
 presence_penalty = get_variable(env_data, "PRESENCE_PENALTY", 0.0, "float")
 temperature = get_variable(env_data, "TEMPERATURE", 0.8, "float")
 top_p = get_variable(env_data, "TOP_P", 0.0, "float")
+search_engine_mode = get_variable(env_data, "SEARCH_ENGINE_MODE", "GOOGLE")
 serp_api_key = get_variable(env_data, "SERP_API", None)
+google_api_key = get_variable(env_data, "GOOGLE_API_KEY", None)
+google_search_id = get_variable(env_data, "CUSTOM_SEARCH_ENGINE_ID", None)
+
 
 
 api_count = 0
@@ -545,7 +564,7 @@ def create_pdf_from_html(reasoning, command_string, command_argument, current_ta
             command_string,
             command_argument,
             current_task,
-            "If success, Complete this task item and regenerate list. Move to next uncompleted item.",
+            "If success, Regenerate task list and mark this task complete.",
         )
     except Exception as e:
         debug_log(f"Error: {e}")
@@ -633,13 +652,13 @@ def run_bash_shell_command(
                 :max_characters
             ]
 
-    debug_log(shell_response)
+    debug_log("Shell response: ",shell_response)
     return create_json_message(
         "BASH Command Output: " + shell_response,
         command_string,
         command_argument,
         current_task,
-        "If success, Complete this task item and regenerate list. Move to next uncompleted item.",
+        "If success, Regenerate task list and mark this task complete.",
         
     )
 
@@ -720,12 +739,12 @@ def run_win_shell_command(
                 :max_characters
             ]
     shell_cleaned = json.dumps(shell_response)
-    debug_log(shell_cleaned)
+    debug_log("Shell response: ", shell_cleaned)
     return create_json_message(
         "Windows Command Output: " + shell_cleaned,
         command_string,
         command_argument,
-        "If success, Complete this task item and regenerate list. Move to next uncompleted item.",
+        "If success, Regenerate task list and mark this task complete.",
         
     )
 
@@ -777,7 +796,7 @@ def save_research(reasoning, command_string, command_argument, current_task, sel
         command_string,
         command_argument,
         current_task,
-        "If success, Complete this task item and regenerate list. Move to next uncompleted item.",
+        "If success, Regenerate task list and mark this task complete.",
     )
 # endregion
 
@@ -805,7 +824,7 @@ def fetch_research(reasoning, command_string, command_argument, current_task, se
         command_string,
         command_argument,
         current_task,
-        "If success, Complete this task item and regenerate list. Move to next uncompleted item.",
+        "If success, Regenerate task list and mark this task complete.",
     )
 # endregion
 
@@ -823,7 +842,7 @@ def create_task_list(
         command_string,
         command_argument,
         current_task,
-        "If success, Complete this task item and regenerate list. Move to next uncompleted item.",
+        "If success, Regenerate task list and mark this task complete.",
         
     )
 
@@ -884,7 +903,7 @@ def file_operations(reasoning, command_string, command_argument, current_task, s
         operation_cleaned = json.dumps(operation_result)
         debug_log("File Operation : " + operation_cleaned + command_string + command_argument +
                   current_task + "Complete: Regenerate task list with item completed and add the filename to the tasklist.")
-        return create_json_message(operation_cleaned, command_string, command_argument, operation_cleaned, "If success, Complete this task item and regenerate list. Move to next uncompleted item.")
+        return create_json_message(operation_cleaned, command_string, command_argument, operation_cleaned, "If success, Regenerate task list and mark this task complete.")
     except ValueError:
         debug_log("File Operation Error : " + reasoning + command_string + command_argument +
                   current_task + self_prompt_action)
@@ -915,9 +934,10 @@ def download_file(reasoning, command_string, command_argument, current_task, sel
             command_string,
             command_argument,
             current_task,
-                "If success, Complete this task item and regenerate list. Move to next uncompleted item.",
+                "If success, Regenerate task list and mark this task complete.",
             
         )
+        
         else:
             return create_json_message(
             "Error downloading file",
@@ -942,55 +962,114 @@ def download_file(reasoning, command_string, command_argument, current_task, sel
 
 # region ### SEARCH ENGINE ###
 
+#GOOGLE API
+if search_engine_mode == "GOOGLE":
+    def search_engine(
+        reasoning, command_string, command_argument, current_task, self_prompt_action
+    ):
+        try:
+            url = "https://www.googleapis.com/customsearch/v1"
+            params = {
+                "key": google_api_key,
+                "cx": google_search_id,
+                "q": command_argument,
+                "safe": "off",
+                "num": 10,
+            }
 
-def search_engine(reasoning, command_string, command_argument, current_task, self_prompt_action):
-    params = {
-        "api_key": serp_api_key,
-        "engine": "duckduckgo",
-        "q": command_argument,
-        "kl": "us-en",
-        "safe": "-2",
-        "num": "5"
-    }
+            google_response = requests.get(url, params=params)
+            data = google_response.json()
 
-    search = GoogleSearch(params)
-    results = search.get_dict()
-    formatted_results = "Organic Results:\n"
+            results = []
+            if "items" in data:
+                for item in data["items"]:
+                    results.append({"title": item["title"], "link": item["link"]})
+            else:
+                set_global_success(False)
+                return create_json_message(
+                    "No Search Results Returned",
+                    command_string,
+                    command_argument,
+                    current_task,
+                    "I will choose another search term",
+                )
 
-    loop_limit = 5
+            formatted_results = ""
+            for result in results:
+                formatted_results += f"Google Image Search Results:\n"
+                formatted_results += f"Title: {result['title']}"
+                formatted_results += f"Link: {result['link']}"
 
-    for index, result in enumerate(results["organic_results"], start=1):
-        if index <= loop_limit:
-            title = result['title'].replace('\n', '').replace('\\n', '')
-            link = result['link'].replace('\n', '').replace('\\n', '')
-            formatted_results += f"{index}. Title: {title}, Link: {link} "
-        else:
+            searchresults = json.dumps(formatted_results.replace('\n', '').replace('\\n', ''))
+
+            debug_log("Google Search: ", searchresults)
+            set_global_success(True)
+            # GOOGLE IMAGE RESULTS RETURNED
             return create_json_message(
-                "Error: Search Error, try another serach term.",
+                "Search Results: " + searchresults,  # type: ignore
                 command_string,
                 command_argument,
                 current_task,
-                "Retry or choose another search term."
+                "If success, Regenerate task list and mark this task complete."
             )
-    debug_log("Search Engine Raw: ", formatted_results)
-    sanitized_results = json.dumps(formatted_results)
-    debug_log("Search Enginer Sanitized: ", sanitized_results)
-    return create_json_message(
-        "Search Results: " + sanitized_results,  # type: ignore
-        command_string,
-        command_argument,
-        current_task,
-        "If success, Complete this task item and regenerate list. Move to next uncompleted item."
-    )
+        except Exception as e:
+            debug_log(f"Error: {str(e)}")
+            set_global_success(False)
+            return create_json_message(
+                "No Search Results Returned" + f"Error: {str(e)}",
+                command_string,
+                command_argument,
+                current_task,
+                "I will double check my arguments or move to next task.",
+            )
+
+#SERP API
+elif search_engine_mode == "SERP":
+
+    def search_engine(reasoning, command_string, command_argument, current_task, self_prompt_action):
+        params = {
+            "api_key": serp_api_key,
+            "engine": "duckduckgo",
+            "q": command_argument,
+            "kl": "us-en",
+            "safe": "-2",
+            "num": 5
+        }
+
+        search = GoogleSearch(params)
+        results = search.get_dict()
+        formatted_results = "Organic Results:\n"
+
+        loop_limit = 5
+
+        for index, result in enumerate(results["organic_results"], start=1):
+            if index <= loop_limit:
+                title = result['title'].replace('\n', '').replace('\\n', '')
+                link = result['link'].replace('\n', '').replace('\\n', '')
+                formatted_results += f"{index}. Title: {title}, Link: {link} "
+            else:
+                return create_json_message(
+                    "Error: Search Error, try another serach term.",
+                    command_string,
+                    command_argument,
+                    current_task,
+                    "Retry or choose another search term."
+                )
+
+        sanitized_results = json.dumps(formatted_results)
+        debug_log("SERP Sanitized: ", sanitized_results)
+        return create_json_message(
+            "Search Results: " + sanitized_results,  # type: ignore
+            command_string,
+            command_argument,
+            current_task,
+            "If success, Regenerate task list and mark this task complete."
+        )
 
 
 # endregion
 
 # region ### BROWSE WEBSITE ###
-
-import re
-
-import re
 
 def browse_website_url(reasoning, command_string, command_argument, current_task, self_prompt_action):
     def run(playwright):
@@ -1021,22 +1100,21 @@ def browse_website_url(reasoning, command_string, command_argument, current_task
     # Keep only A-Z, a-z, and spaces
     extracted_text = re.sub(r'[^A-Za-z\s]', '', extracted_text)
 
-    sanitized_text = extracted_text  # Initialize sanitized_text to extracted_text
+    sanitized_text = json.dumps(extracted_text)  # Initialize sanitized_text to extracted_text
 
     # type: ignore
     if max_characters is not None and len(extracted_text) > max_characters:
         sanitized_text = extracted_text[:max_characters]
 
-        debug_log(sanitized_text)
+        debug_log("Browse URL: ", sanitized_text)
 
     return create_json_message(
         "Website Content: " + sanitized_text,  # type: ignore
         "command_string",
         command_argument,
         current_task,
-        "If success, Complete this task item and regenerate list. Move to next uncompleted item.",
+        "If success, Regenerate task list and mark this task complete.",
     )
-
 
 
 # endregion

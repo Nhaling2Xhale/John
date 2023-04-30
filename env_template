@@ -34,6 +34,14 @@ STOP=None
 MAX_CONVERSATIONS = 6
 MAX_CHARACTERS = 3000
 ### SEARCH ENGINE API ########################################
+#VALUES: GOOGLE, SERP
+SEARCH_ENGINE_MODE="GOOGLE"
+
+#GOOGLE KEYS
+GOOGLE_API_KEY=""
+CUSTOM_SEARCH_ENGINE_ID=""
+
+#SERP KEYS
 #SIGN UP https://serpapi.com/
 SERP_API=""
 ### BRIGHT DATA PROXY ########################################

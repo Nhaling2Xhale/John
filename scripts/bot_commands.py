@@ -2,7 +2,7 @@ botcommands = [
     {
         "command_string": "create_task_list",
         "command_argument": "'[TASKLIST]'",
-        "command_description": "Used to create initial tasklist and complete each task item. Replace '[TASKLIST]' with your initial task list, or regenereate task list with completed items."
+        "command_description": "Used to create initial tasklist and complete each task item. Replace '[TASKLIST]' with a multiline string using triple backticks (```)."
     },
     {
         "command_string": "create_pdf_from_html",
@@ -16,8 +16,8 @@ botcommands = [
     },
     {
         "command_string": "search_engine",
-        "command_argument": "[SEARCH QUERY]|[PAGENUMBER]",
-        "command_description": "Search Enginer Provides a list of url's for scraping or browsing."
+        "command_argument": "[DETAILED SEARCH QUERY]",
+        "command_description": "Search Engine Provides a list of url's for scraping or browsing."
     },
     {
         "command_string": "browse_website_url",

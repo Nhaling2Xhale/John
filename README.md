@@ -9,7 +9,7 @@ LordGPT is an automated AI Assistant that can accomplish a wide range of tasks.
 - Browse Internet and Research. (Playwright Needed pip install playwright | playwirght install)
 - Read, write, append, delete, rename, move local files.
 - Generate Python Scripts, and even write its own commands to further is capabilities.
-- Search Engine (Google) - Home Depot, Walkmart, DuckDuckGo, ebay, applestore, yelp, yahoo and more coming soon!
+- Search Engine (Google or SERP, choose in env) - Home Depot, Walkmart, DuckDuckGo, ebay, applestore, yelp, yahoo and more coming soon!
 - Generate html formatted PDF Reports
 - Use more than one API at a time. Options to flip between Azure and OpenAI for each call, reducing timeouts, and helping Azure and OpenAI out by spreading out requests.
 
@@ -19,7 +19,8 @@ KNOWN ISSUES:
 1. Windows Binary Crashes sometimes. Working on exception coding.
 
 REQUIREMENTS:
-- Google Search API for searching.
+- Google Search API for searching with Google API
+- SERP API key for searching with SERP
 - Deep pockets for tokens.
 
 WINDOWS BINARY:
@@ -63,6 +64,22 @@ OPENAI API:
 - Once logged in, click your profile in the upper right. 
 - Choose "API Keys." 
 - Generate an API key and save it somewhere; you won't be able to see it again. 
+
+GOOGLE API: 
+
+- Sign up for a Gmail account if you don’t already have one. 
+- Visit https://cloud.google.com/. 
+- Go to "API & Services" and choose "Credentials." 
+- Choose "Create Credentials" at the top and select "API key." 
+- Save the API in Notepad, along with the OpenAI key. 
+- Now visit the left menu again, select "API & Services," and choose "Enabled API & Services." 
+- At the top of the page, select "+Enable API and Services." 
+- In the search type "Custom Search." 
+- Enable the API and choose "Manage." 
+- Now visit Programmable Search - All search engines (google.com). 
+- Click "Add" and give your search engine a name and select "Entire web," then click "Create."
+- Now copy the code after "cse.js." Example: "ccse.js?cx=e14a5ff417c4b26" 
+- Paste that into Notepad. 
 
 SERPAPI SEARCH API: 
 - Sign up https://serpapi.com/ 

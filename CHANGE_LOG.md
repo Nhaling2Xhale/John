@@ -1,4 +1,8 @@
-UPDATE 4-28-2022 10:30PM 
+UDPATE: 4-30-2023
+- Added the option to choose between Google Search API and Serp
+- Fixed a few more exceptions with unexpected data.
+
+UPDATE 4-28-2023 10:30PM 
 - Fixed all exceptions concerning illegal characters and invalid response response.
 - Forcing a json message even if the lord doesnt respond with it.
 
