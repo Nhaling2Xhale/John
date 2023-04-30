@@ -34,7 +34,7 @@ from playwright.sync_api import sync_playwright
 from scripts.bot_prompts import command_list, bot_prompt
 from scripts.bot_commands import botcommands
 # endregion
-current_version = "1.7"
+current_version = "1.8"
 
 def log_exception(exc_type, exc_value, exc_traceback):
     with open("exceptions.log", "a") as f:
