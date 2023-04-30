@@ -11,8 +11,8 @@ botcommands = [
     },
     {
         "command_string": "file_operations",
-        "command_argument": "filename|```content```|operation",
-        "command_description": "Used for all file operations, Every argument is required to conform to this format:(filename|```content```|operation) Filename is the name of file with ext. Content is a multiline string using triple backticks (```). For file rename and move operations, the content needs be the new name or destination path, respectively. The following file operations are valid: 'write', 'read', 'append', 'rename', 'move', 'delete'. Read files to verify."
+        "command_argument": "filename.ext|```content```|operationtype",
+        "command_description": "Used for all file operations, Every argument is required to conform to this format:(filename.ext|```content```|operationtype) Filename is the name of file with ext. Content is a multiline string using triple backticks (```). For file rename and move operations, the content needs be the new name or destination path, respectively. The available operation types are: 'write', 'read', 'append', 'rename', 'move', 'delete'."
     },
     {
         "command_string": "search_engine",

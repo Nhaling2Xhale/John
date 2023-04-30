@@ -1,4 +1,5 @@
 # region ### IMPORTS ###
+# Standard library imports
 import os
 import sys
 import re
@@ -10,10 +11,14 @@ import datetime
 import ssl
 import requests
 import shutil
-import requests.exceptions
+import traceback
+import asyncio
 from time import sleep
 from typing import Dict
 
+# Third-party imports
+import requests
+from requests.exceptions import ReadTimeout
 from dotenv import load_dotenv
 from termcolor import colored
 from bs4 import BeautifulSoup
@@ -21,16 +26,14 @@ from fake_useragent import UserAgent
 from unidecode import unidecode
 from yaspin import yaspin
 from serpapi import GoogleSearch
-from datetime import datetime
-
 import pdfkit
 import urllib.request
+from playwright.sync_api import sync_playwright
 
+# Local file imports
 from scripts.bot_prompts import command_list, bot_prompt
 from scripts.bot_commands import botcommands
-from playwright.sync_api import sync_playwright
 #endregion
-import traceback
 
 
 def log_exception(exc_type, exc_value, exc_traceback):
@@ -67,7 +70,7 @@ def debug_log(message, value=None):
         # Create the debug.txt file path
         debug_file_path = os.path.join(working_folder, "debug.txt")
 
-        current_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        current_datetime = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         # Write the message and value to the debug.txt file
         # Add the encoding parameter here
@@ -279,14 +282,30 @@ def alternate_api(number):
         )
 
 # Typing effect function
+
+
 def typing_print(text, color=None):
     if text is None or len(text.strip()) == 0:
         return
-
+    
     for char in text:
         print(colored(char, color=color) if color else char, end="", flush=True)
         time.sleep(0.003)  # adjust delay time as desired
     print()  # move cursor to the next line after printing the text
+
+def print_bot_response(reasoning, command_string, command_argument, current_task, self_prompt_action):
+    print(colored("LordGPT Thoughts: ", color="yellow"), end="")
+    typing_print(str(reasoning))
+    print(colored("Currently :       ", color="green"), end="")
+    typing_print(str(current_task) + "")
+    print(colored("Next Task:        ", color="blue"), end="")
+    typing_print(str(self_prompt_action) + "")
+    print(colored("Executing CMD:    ", color="red"), end="")
+    typing_print(str(command_string))
+    print(colored("CMD Argument:     ", color="red"), end="")
+    typing_print(str(command_argument) + "\n\n")
+    return
+
 
 def remove_brackets(text):
     return re.sub(r'\[|\]', '', text)
@@ -382,10 +401,10 @@ text_color_dict = {
 
 def query_bot(messages, retries=api_retry):
         debug_log(messages)
-        random_text, random_color = get_random_text_and_color(text_color_dict)
-        alternate_api(api_count)    
+        random_text, random_color = get_random_text_and_color(text_color_dict)   
         time.sleep(api_throttle) #type: ignore
-        
+        alternate_api(api_count)
+    
         with yaspin(text=random_text, color=random_color) as spinner:
             for attempt in range(retries): #type: ignore
                 try:
@@ -409,52 +428,80 @@ def query_bot(messages, retries=api_retry):
                         "Authorization": f"Bearer {api_key}",
                     }
                     
-                    # BRIGHT DATA PROXY
+                    # BD PROXY REQUEST
                     if bd_enabled:
-                        
-                        json_utf8 = json_payload.encode('utf-8')
-                        session_id = random.random()
-                        super_proxy_url = ('http://%s-session-%s:%s@zproxy.lum-superproxy.io:%d' %
-                                    (bd_username, session_id, bd_password, bd_port))
-                        proxy_handler = urllib.request.ProxyHandler({
-                            'http': super_proxy_url,
-                            'https': super_proxy_url,
-                    })
-                        
-                        ssl._create_default_https_context = ssl._create_unverified_context
-                        opener = urllib.request.build_opener(proxy_handler)
-                        
-                        req = urllib.request.Request(
-                            api_url, data=json_utf8, headers=headers)  # type: ignore
-                        
-
-                        #BRIGHT DATA REQUEST                
-                        request = opener.open(req, timeout=api_timeout) #type: ignore
-                        
-                        uresponse = request.read()
-                        
-                        utfresponse = uresponse.decode('utf-8')
-                        botresponse = json.loads(utfresponse)
-                        response_json = botresponse
-                        
-                        debug_log("Bot reply: ", botresponse)
+                        try:
+                            json_utf8 = json_payload.encode('utf-8')
+                            session_id = random.random()
+                            super_proxy_url = ('http://%s-session-%s:%s@zproxy.lum-superproxy.io:%d' %
+                                        (bd_username, session_id, bd_password, bd_port))
+                            proxy_handler = urllib.request.ProxyHandler({
+                                'http': super_proxy_url,
+                                'https': super_proxy_url,
+                            })                            
+                            ssl._create_default_https_context = ssl._create_unverified_context
+                            opener = urllib.request.build_opener(proxy_handler)                            
+                            req = urllib.request.Request(
+                                api_url, data=json_utf8, headers=headers)                         
+                            #BRIGHT DATA REQUEST                
+                            request = opener.open(req, timeout=api_timeout)
+                            uresponse = request.read()
+                            utfresponse = uresponse.decode('utf-8')
+                            botresponse = json.loads(utfresponse)
+                            response_json = botresponse
+                            debug_log("Bot reply: ", botresponse)
+                            
+                        except Exception as e:
+                            if attempt < retries - 1:  # type: ignore
+                                print(f"Error occurred: {str(e)}...Retrying...")
+                                
+                                time.sleep(2 ** attempt)
                     else:
-                        #STANDARD API REQUEST
+                        #STANDARD API REQUEST                       
+
+                       if not bd_enabled:
+                           try:
+                               botresponse =  requests.request(
+                                   "POST", api_url, headers=headers, data=json_payload, timeout=api_timeout)  # type: ignore
+                               response_json = botresponse.json()
+                           except ReadTimeout as e:
+                               if attempt < retries - 1:  # type: ignore
+                                   print(f"ReadTimeout Error occurred: {str(e)}...Retrying...")
+                                   time.sleep(2 ** attempt)
+                                   continue
+                               else:
+                                   return (
+                                       "Unknown API Error: Resend response in the correct json format",
+                                       " ",
+                                       " ",
+                                       "Starting with the first uncompleted task in the task list",
+                                       "I will respond using the required json format and continue with the first uncompleted task"
+                                   )
+                           except Exception as e:
+                               print(f"Error occurred: {str(e)}")
+                               return (
+                                   "Unknown API Error: Resend response in the correct json format",
+                                   " ",
+                                   " ",
+                                   "Starting with the first uncompleted task in the task list",
+                                   "I will respond using the required json format and continue with the first uncompleted task"
+                               )
+                           
+                       
                         
-                        botresponse = requests.request("POST", api_url, headers=headers, data=json_payload, timeout=api_timeout) #type: ignore
-                        
-                        response_json = botresponse.json()
-                        
-                    debug_log("Bot reply: ", botresponse)
-                    
-                    # Handling error response
-                    
+                    debug_log("Bot reply: ", botresponse)                    
+                    # Handling error response                    
                     if "error" in response_json:
                         error_message = response_json["error"]["message"]
                         print(f"Error: {error_message}")
-                        alternate_api(api_count)
                         
-                        continue
+                        return (
+                            f"API error {error_message}",
+                            " ",
+                            " ",
+                            "Starting with the first uncompleted task in the task list",
+                            "I will respond using the required json format and continue with the first uncompleted task"
+                        )
                 
                     debug_log(response_json)    
                     responseparsed = response_json["choices"][0]["message"]["content"]
@@ -468,17 +515,17 @@ def query_bot(messages, retries=api_retry):
                         debug_log(
                             f"Formatted non json response: {responseparsed}]")
                         responsebad = create_json_message(
-                            responseparsed, "I need to always respond with the required json format", "No Command", "Current Task", "I need to respond in the required json format")
+                        responseparsed, "I need to always respond with the required json format", "No Command", "Current Task", "I need to respond in the required json format")
                         responseformatted = json.loads(responsebad)
                     
                     debug_log("API Count: ", api_count)
                     if responseformatted is not None:
                         if "current_task" in responseformatted:
-                            current_task = responseformatted["current_task"]
-                            reasoning = responseformatted["reasoning_80_words"]
+                            reasoning = responseformatted["reasoning_80_words"]                                                        
                             command_string = responseformatted["command_string"]
                             command_argument = responseformatted["command_argument"]
-                            self_prompt_action = responseformatted["self_prompt_action"]
+                            current_task = responseformatted["current_task"]
+                            self_prompt_action = responseformatted["self_prompt_action"]                            
                             
                             
                             return (
@@ -489,25 +536,24 @@ def query_bot(messages, retries=api_retry):
                                 self_prompt_action,
                             )
                             
-                        else:
+                        else:                            
                             
-                            alternate_api(api_count)
                             return (
-                                "No valid json, ensure you format your responses as the required json",
-                                "None",
-                                "None",
-                                "Reformat reply as json",
-                                "Continue where you left off",
-                                "Unknown",
+                                "Invalid JSON Format, please use the correct format.",
+                                " ",
+                                " ",
+                                "Starting with the first uncompleted task in the task list",
+                                "I will respond using the required json format and continue with the first uncompleted task"
                             )
         
                 except Exception as e:
                     if attempt < retries - 1: #type: ignore
                         print(f"API Timeout, increase your timeout: {str(e)}...Retrying...")
-                        alternate_api(api_count)
+                        
                         time.sleep(2**attempt)
                     else:
-                        raise e
+                        print("API Retries reached, insert another coin and try again...")
+                        exit
         
 
 
@@ -528,7 +574,7 @@ def create_pdf_from_html(reasoning, command_string, command_argument, current_ta
                 command_string,
                 command_argument,
                 current_task,
-                "Google Error",
+                "I need to replace the entire ```[HTML MARKUP]``` with an actual HTML string formatted with backtiks.",
             )
 
         content = content_match.group(1).strip()
@@ -536,11 +582,11 @@ def create_pdf_from_html(reasoning, command_string, command_argument, current_ta
         # Check if content is [HTML MARKUP]
         if content.lower() == "```[HTML MARKUP]```":
             return create_json_message(
-                "Error: Invalid Content. You must replace [HTML MARKUP] with the actual HTML Markup string formatted with backtiks.",
+                "Error: Invalid Content. You must replace ```[HTML MARKUP]``` with the HTML string formatted with backtiks.",
                 command_string,
                 command_argument,
                 current_task,
-                "Google Error",
+                "I need to replace the entire ```[HTML MARKUP]``` with an actual HTML string formatted with backtiks.",
             )
 
         # Parse the input string to extract the filename and content
@@ -569,7 +615,7 @@ def create_pdf_from_html(reasoning, command_string, command_argument, current_ta
             command_string,
             command_argument,
             current_task,
-            "If success, Regenerate task list and mark this task complete.",
+            "If success, Regenerate task list with task: " + current_task + " completed.",
         )
     except Exception as e:
         debug_log(f"Error: {e}")
@@ -860,7 +906,7 @@ def file_operations(reasoning, command_string, command_argument, current_task, s
         # Use regex to split the command_argument
         match = re.match(r'([^|]+)\|(```[\s\S]*?```)\|(.+)', command_argument)
         if not match:
-            raise ValueError("Invalid command_argument format")
+            return create_json_message("Error: Every argument must contain this format:(filename|```content```|operation) The filename is the name of the file you want to operate on. The content needs to be formatted text or formatted code as a multiline string using triple backticks (```). For file rename and move operations, the content needs be the new name or destination path, respectively. The following file operations are valid: 'write', 'read', 'append', 'rename', 'move', 'delete'. Read files to verify.", command_string, command_argument, current_task, "Retry using a valid file_operation format and operation")
 
         filename, content, operation = match.groups()
         content = content.strip("```")
@@ -1283,8 +1329,8 @@ def main_loop():
 
     print(
         colored(
-            "1. GPT3.5 & GPT4 Full Support!" +
-            "\n2. Example Goal: Provide a 5 day weather forecast for my location using the weather.gov API and save it to a PDF" +
+            "1. GPT-4 Works the best. GPT-3.5 has issues with hallucinations, but it does work most of the time." +
+            "\n2. Example Goal: Determine my location, gather the 5 day forecast from the weather.gov website for my location, generate a professional looking PDF with the 5 day forecast." +
             "\n3. Report Issues: https://github.com/Cytranics/LordGPT/issues"
             "\n4. Discord: https://discord.gg/2jT32cM8", "yellow",
         )
@@ -1293,11 +1339,11 @@ def main_loop():
     user_goal = input("Goal: ")
     print(colored("Creating detailed plan to achive the goal....", "green"))
     if not user_goal:
-        user_goal = "Create a seperate task item for each website, browse and save the data to a txt file for 10 websites."
+        user_goal = "Determine my location, gather the 5 day forecast from the weather.gov website for my location, generate a professional looking PDF with the 5 day forecast."
         print(colored("Goal: " + user_goal, "green"))
     set_global_success(True)
-
-    bot_send = openai_bot_handler(bot_prompt + user_goal, f"""{{"reasoning_80_words": "Respond with your detailed formatted task list for the goal by replacing [TASKLIST]", "command_string": "[COMMAND]", "command_argument": "[ARGUMENT]", "current_task": "[CURRENT TASK]", "self_prompt_action": "[SUGGESTED NEXT TASK]"}}""", "assistant")
+    alternate_api(api_count)
+    bot_send =  openai_bot_handler(bot_prompt + user_goal, f"""{{"reasoning_80_words": "Respond with your detailed formatted task list for the goal by replacing [TASKLIST]", "command_string": "[COMMAND]", "command_argument": "[ARGUMENT]", "current_task": "[CURRENT TASK]", "self_prompt_action": "[SUGGESTED NEXT TASK]"}}""", "assistant")
 
 
     while True:
@@ -1307,6 +1353,7 @@ def main_loop():
         try:
             num_iterations = int(num_input) if num_input.strip() else 1
         except ValueError:
+            
             print("Invalid input. Using default value of 1.")
             num_iterations = 1
     
