@@ -545,7 +545,7 @@ def create_pdf_from_html(reasoning, command_string, command_argument, current_ta
             command_string,
             command_argument,
             current_task,
-            "Ensure task is complete, then regen task list as item complete.",
+            "If success, Complete this task item and regenerate list. Move to next uncompleted item.",
         )
     except Exception as e:
         debug_log(f"Error: {e}")
@@ -638,8 +638,8 @@ def run_bash_shell_command(
         "BASH Command Output: " + shell_response,
         command_string,
         command_argument,
-        "I should analyze the output to ensure success and research any errors",
-        self_prompt_action,
+        current_task,
+        "If success, Complete this task item and regenerate list. Move to next uncompleted item.",
         
     )
 
@@ -725,7 +725,7 @@ def run_win_shell_command(
         "Windows Command Output: " + shell_cleaned,
         command_string,
         command_argument,
-        "If success, Complete this task item and regenerate list.",
+        "If success, Complete this task item and regenerate list. Move to next uncompleted item.",
         
     )
 
@@ -777,7 +777,7 @@ def save_research(reasoning, command_string, command_argument, current_task, sel
         command_string,
         command_argument,
         current_task,
-        "If success, Complete this task item and regenerate list.",
+        "If success, Complete this task item and regenerate list. Move to next uncompleted item.",
     )
 # endregion
 
@@ -805,7 +805,7 @@ def fetch_research(reasoning, command_string, command_argument, current_task, se
         command_string,
         command_argument,
         current_task,
-        "If success, Complete this task item and regenerate list.",
+        "If success, Complete this task item and regenerate list. Move to next uncompleted item.",
     )
 # endregion
 
@@ -823,7 +823,7 @@ def create_task_list(
         command_string,
         command_argument,
         current_task,
-        "Regenerate to add 1. Verified Detailed Task List only if its not complete, if not, double check task list to ensure its detailed enough so only one command is issued per item.",
+        "If success, Complete this task item and regenerate list. Move to next uncompleted item.",
         
     )
 
@@ -831,12 +831,6 @@ def create_task_list(
 # endregion
 
 # region ### FILE OPERATION ###
-
-
-import os
-import shutil
-
-
 def file_operations(reasoning, command_string, command_argument, current_task, self_prompt_action):
     try:
         # Use regex to split the command_argument
@@ -890,7 +884,7 @@ def file_operations(reasoning, command_string, command_argument, current_task, s
         operation_cleaned = json.dumps(operation_result)
         debug_log("File Operation : " + operation_cleaned + command_string + command_argument +
                   current_task + "Complete: Regenerate task list with item completed and add the filename to the tasklist.")
-        return create_json_message(operation_cleaned, command_string, command_argument, operation_cleaned, "Ensure task is complete, then complete task.")
+        return create_json_message(operation_cleaned, command_string, command_argument, operation_cleaned, "If success, Complete this task item and regenerate list. Move to next uncompleted item.")
     except ValueError:
         debug_log("File Operation Error : " + reasoning + command_string + command_argument +
                   current_task + self_prompt_action)
@@ -921,7 +915,7 @@ def download_file(reasoning, command_string, command_argument, current_task, sel
             command_string,
             command_argument,
             current_task,
-                "Regenerate task list with item completed and add the filename to the tasklist.",
+                "If success, Complete this task item and regenerate list. Move to next uncompleted item.",
             
         )
         else:
@@ -986,7 +980,7 @@ def search_engine(reasoning, command_string, command_argument, current_task, sel
         command_string,
         command_argument,
         current_task,
-        "If success, Complete this task item and regenerate list."
+        "If success, Complete this task item and regenerate list. Move to next uncompleted item."
     )
 
 
@@ -1040,7 +1034,7 @@ def browse_website_url(reasoning, command_string, command_argument, current_task
         "command_string",
         command_argument,
         current_task,
-        "If success, Complete this task item and regenerate list.",
+        "If success, Complete this task item and regenerate list. Move to next uncompleted item.",
     )
 
 
@@ -1117,7 +1111,7 @@ def command_handler(
             + command_string
             + " is not a valid command_string."
         )
-        return create_json_message("The command_string " + command_string + " is not a valid command string.", command_string, command_argument, current_task, self_prompt_action)
+        return create_json_message("The command_string " + command_string + " is not a valid command string.", command_string, command_argument, current_task, "Double check the command string and format")
     return function(
         reasoning, command_string, command_argument, current_task, self_prompt_action
     )
@@ -1166,11 +1160,11 @@ def openai_bot_handler(current_prompt, message, role):
         (reasoning, command_string, command_argument, current_task, self_prompt_action) = query_bot(messages)      
 
         
-        print(colored("LordGPT Thoughts: ", color="green"), end="")
+        print(colored("LordGPT Thoughts: ", color="yellow"), end="")
         typing_print(str(reasoning))
-        print(colored("Currently :       ", color="blue"), end="")
+        print(colored("Currently :       ", color="green"), end="")
         typing_print(str(current_task) + "")
-        print(colored("Next Task:        ", color="magenta"), end="")
+        print(colored("Next Task:        ", color="blue"), end="")
         typing_print(str(self_prompt_action) + "")
         print(colored("Executing CMD:    ", color="red"), end="")
         typing_print(str(command_string))
