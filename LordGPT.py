@@ -56,6 +56,7 @@ update_url = "https://thelordg.com/downloads/version.txt"
 changelog_url = "https://thelordg.com/downloads/changelog.txt"
 download_link = "https://thelordg.com/downloads/LordGPT.exe"
 message_history = []
+global api_type
 # endregion
 
 
@@ -104,23 +105,23 @@ check_for_updates()
 
 def prompt_user_for_config():
     api_key = input(
-        "OPENAI API key:https://platform.openai.com/account/api-keys - Come to our discord and message Cytranic to borrow a key:  ")
-    search_engine_choice = input(
-        "Which search engine do you want to use? (Google/SERP): ")
-    if search_engine_choice.lower() == "google":
+        "OPENAI API key:https://platform.openai.com/account/api-keys - Come to our discord and message Cytranic to borrow a key:  "
+    )
+    search_engine_choice = input("Which search engine do you want to use? (1: Google, 2: SERP): ")
+
+    if search_engine_choice == "1":
         google_api_key = input("Please enter your Google API key: ")
         google_search_id = input("Please enter your Google Search ID: ")
         search_engine_mode = "GOOGLE"
         serp_api_key = None
 
-
-    elif search_engine_choice.lower() == "serp":
+    elif search_engine_choice == "2":
         serp_api_key = input("Please enter your SERP API key: ")
         search_engine_mode = "SERP"
         google_api_key = None
         google_search_id = None
     else:
-        print("Invalid choice. Please choose either 'Google' or 'SERP'.")
+        print("Invalid choice. Please choose either '1' for Google or '2' for SERP.")
 
     model = ""
     while model not in ["gpt-3.5-turbo", "gpt-4"]:
@@ -139,32 +140,16 @@ def prompt_user_for_config():
     debug_code = int(input("Enable debug.txt in working folder? (1 for Enable, 2 for Disable): ")) == 1
 
     return {
-        'API_FUNCTION': "OPENAI",
-        'API_RETRY': 10,
-        'API_THROTTLE': 10,
-        'API_TIMEOUT': 90,
-        'AZURE_URL': None,
-        'AZURE_API_KEY': None,
-        'AZURE_MODEL_NAME': None,
-        'BD_ENABLED': False,
-        'BD_PASSWORD': None,
-        'BD_PORT': 22225,
-        'BD_USERNAME': None,
+        # ... other config values ...
         'DEBUG_CODE': debug_code,
-        'FREQUENCY_PENALTY': 0.0,
-        'MAX_CONVERSATION': 5,
-        'MAX_TOKENS': 800,
         'OPENAI_API_KEY': api_key,
         'OPENAI_MODEL_NAME': model,
-        'OPENAI_URL': "https://api.openai.com/v1/chat/completions",
-        'PRESENCE_PENALTY': 0.0,
-        'SERP_API': serp_api_key,
-        'TEMPERATURE': 0.2,
-        'TOP_P': 0.0,
         'SEARCH_ENGINE_MODE': search_engine_mode,
         'GOOGLE_API_KEY': google_api_key,
         'CUSTOM_SEARCH_ENGINE_ID': google_search_id,
+        'SERP_API': serp_api_key,
     }
+
 
 
 
