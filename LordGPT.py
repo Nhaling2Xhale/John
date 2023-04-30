@@ -34,7 +34,7 @@ from playwright.sync_api import sync_playwright
 from scripts.bot_prompts import command_list, bot_prompt
 from scripts.bot_commands import botcommands
 # endregion
-
+current_version = "1.7"
 
 def log_exception(exc_type, exc_value, exc_traceback):
     with open("exceptions.log", "a") as f:
@@ -53,7 +53,6 @@ if not os.path.exists(working_folder):
 
 # region GLOBAL VARIABLES
 config_file = "config.json"
-current_version = "1.6"
 update_url = "https://thelordg.com/downloads/version.txt"
 changelog_url = "https://thelordg.com/downloads/changelog.txt"
 download_link = "https://thelordg.com/downloads/LordGPT.exe"
@@ -658,8 +657,8 @@ def run_shell_command(
             "Command execution timed out.",
             command_string,
             command_argument,
-            "I should research the error",
-            self_prompt_action,
+            "The command could have suceeded, I will test",
+            "Test to see if command succeeded",
 
         )
 
