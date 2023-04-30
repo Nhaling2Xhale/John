@@ -33,18 +33,17 @@ from playwright.sync_api import sync_playwright
 # Local file imports
 from scripts.bot_prompts import command_list, bot_prompt
 from scripts.bot_commands import botcommands
-#endregion
+# endregion
 
 
 def log_exception(exc_type, exc_value, exc_traceback):
     with open("exceptions.log", "a") as f:
         f.write("\n\n" + "=" * 80 + "\n")
-        f.write(f"Exception Timestamp: {datetime.now()}\n")
+        f.write(f"Exception Timestamp: {datetime.datetime.now()}\n")
         traceback.print_exception(exc_type, exc_value, exc_traceback, file=f)
 
 
 sys.excepthook = log_exception
-
 
 
 current_path = os.getcwd()
@@ -78,10 +77,10 @@ def debug_log(message, value=None):
             debug_file.write(f"[{current_datetime}] {message}{value}\n\n")
 
 
-    
 def set_global_success(value):
     global success
     success = value
+
 
 def check_for_updates():
     try:
@@ -104,13 +103,17 @@ def check_for_updates():
 
     except requests.exceptions.RequestException as e:
         print("Error checking for updates:", e)
+
+
 check_for_updates()
+
 
 def prompt_user_for_config():
     api_key = input(
         "OPENAI API key:https://platform.openai.com/account/api-keys - Come to our discord and message Cytranic to borrow a key:  "
     )
-    search_engine_choice = input("Which search engine do you want to use? (1: Google, 2: SERP): ")
+    search_engine_choice = input(
+        "Which search engine do you want to use? (1: Google, 2: SERP): ")
 
     if search_engine_choice == "1":
         google_api_key = input("Please enter your Google API key: ")
@@ -131,7 +134,8 @@ def prompt_user_for_config():
         print("Please select a model:")
         print("1. GPT-3.5")
         print("2. GPT-4")
-        model_choice = input("Choose the number of the model you have access to: ")
+        model_choice = input(
+            "Choose the number of the model you have access to: ")
 
         if model_choice == "1":
             model = "gpt-3.5-turbo"
@@ -140,7 +144,8 @@ def prompt_user_for_config():
         else:
             print("Invalid selection. Please enter 1 or 2.")
 
-    debug_code = int(input("Enable debug.txt in working folder? (1 for Enable, 2 for Disable): ")) == 1
+    debug_code = int(input(
+        "Enable debug.txt in working folder? (1 for Enable, 2 for Disable): ")) == 1
 
     return {
         'API_FUNCTION': "OPENAI",
@@ -169,8 +174,6 @@ def prompt_user_for_config():
         'GOOGLE_API_KEY': google_api_key,
         'CUSTOM_SEARCH_ENGINE_ID': google_search_id,
     }
-
-
 
 
 def load_config_from_file(config_file):
@@ -241,8 +244,9 @@ google_api_key = get_variable(env_data, "GOOGLE_API_KEY", None)
 google_search_id = get_variable(env_data, "CUSTOM_SEARCH_ENGINE_ID", None)
 
 
-
 api_count = 0
+
+
 def alternate_api(number):
     global api_count
     global model
@@ -287,11 +291,12 @@ def alternate_api(number):
 def typing_print(text, color=None):
     if text is None or len(text.strip()) == 0:
         return
-    
+
     for char in text:
         print(colored(char, color=color) if color else char, end="", flush=True)
         time.sleep(0.003)  # adjust delay time as desired
     print()  # move cursor to the next line after printing the text
+
 
 def print_bot_response(reasoning, command_string, command_argument, current_task, self_prompt_action):
     print(colored("LordGPT Thoughts: ", color="yellow"), end="")
@@ -345,20 +350,22 @@ def get_random_user_agent():
         user_agent = ua.random
     return user_agent
 
+
 def get_random_text_and_color(text_color_dict):
     key = random.choice(list(text_color_dict.keys()))
     return key, text_color_dict[key]
 
 # endregion
 
-#region ### TEXT PARSER ###
-import re
-from bs4 import BeautifulSoup
+
+# region ### TEXT PARSER ###
+
 
 def extract_text(html_content):
     soup = BeautifulSoup(html_content, 'html.parser')
 
-    allowed_tags = ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'a', 'span', 'ul', 'li']
+    allowed_tags = ['p', 'h1', 'h2', 'h3', 'h4',
+                    'h5', 'h6', 'a', 'span', 'ul', 'li']
 
     extracted_text = []
     for tag in allowed_tags:
@@ -373,7 +380,8 @@ def extract_text(html_content):
 
     return cleaned_text
 
-#endregion
+# endregion
+
 
 # region ### API QUERY ###
 text_color_dict = {
@@ -399,162 +407,161 @@ text_color_dict = {
     "Jamming to LordGPT's retro tunes.": "light_blue"
 }
 
-def query_bot(messages, retries=api_retry):
-        debug_log(messages)
-        random_text, random_color = get_random_text_and_color(text_color_dict)   
-        time.sleep(api_throttle) #type: ignore
-        alternate_api(api_count)
-    
-        with yaspin(text=random_text, color=random_color) as spinner:
-            for attempt in range(retries): #type: ignore
-                try:
-                    
-                    json_payload = json.dumps(
-                        {
-                            "model": model,
-                            "messages": messages,
-                            "max_tokens": max_tokens,
-                            "temperature": temperature,
-                            "top_p": top_p,
-                            "frequency_penalty": presence_penalty,
-                            "presence_penalty": presence_penalty,
-                        }
-                    )
-                    
-                    debug_log("JSON Payload: ", json_payload)
-                    headers = {
-                        "api-key": api_key,
-                        "Content-Type": "application/json",
-                        "Authorization": f"Bearer {api_key}",
-                    }
-                    
-                    # BD PROXY REQUEST
-                    if bd_enabled:
-                        try:
-                            json_utf8 = json_payload.encode('utf-8')
-                            session_id = random.random()
-                            super_proxy_url = ('http://%s-session-%s:%s@zproxy.lum-superproxy.io:%d' %
-                                        (bd_username, session_id, bd_password, bd_port))
-                            proxy_handler = urllib.request.ProxyHandler({
-                                'http': super_proxy_url,
-                                'https': super_proxy_url,
-                            })                            
-                            ssl._create_default_https_context = ssl._create_unverified_context
-                            opener = urllib.request.build_opener(proxy_handler)                            
-                            req = urllib.request.Request(
-                                api_url, data=json_utf8, headers=headers)                         
-                            #BRIGHT DATA REQUEST                
-                            request = opener.open(req, timeout=api_timeout)
-                            uresponse = request.read()
-                            utfresponse = uresponse.decode('utf-8')
-                            botresponse = json.loads(utfresponse)
-                            response_json = botresponse
-                            debug_log("Bot reply: ", botresponse)
-                            
-                        except Exception as e:
-                            if attempt < retries - 1:  # type: ignore
-                                print(f"Error occurred: {str(e)}...Retrying...")
-                                
-                                time.sleep(2 ** attempt)
-                    else:
-                        #STANDARD API REQUEST                       
 
-                       if not bd_enabled:
-                           try:
-                               botresponse =  requests.request(
-                                   "POST", api_url, headers=headers, data=json_payload, timeout=api_timeout)  # type: ignore
-                               response_json = botresponse.json()
-                           except ReadTimeout as e:
-                               if attempt < retries - 1:  # type: ignore
-                                   print(f"ReadTimeout Error occurred: {str(e)}...Retrying...")
-                                   time.sleep(2 ** attempt)
-                                   continue
-                               else:
-                                   return (
-                                       "Unknown API Error: Resend response in the correct json format",
-                                       " ",
-                                       " ",
-                                       "Starting with the first uncompleted task in the task list",
-                                       "I will respond using the required json format and continue with the first uncompleted task"
-                                   )
-                           except Exception as e:
-                               print(f"Error occurred: {str(e)}")
-                               return (
-                                   "Unknown API Error: Resend response in the correct json format",
-                                   " ",
-                                   " ",
-                                   "Starting with the first uncompleted task in the task list",
-                                   "I will respond using the required json format and continue with the first uncompleted task"
-                               )
-                           
-                       
-                        
-                    debug_log("Bot reply: ", botresponse)                    
-                    # Handling error response                    
-                    if "error" in response_json:
-                        error_message = response_json["error"]["message"]
-                        print(f"Error: {error_message}")
-                        
-                        return (
-                            f"API error {error_message}",
-                            " ",
-                            " ",
-                            "Starting with the first uncompleted task in the task list",
-                            "I will respond using the required json format and continue with the first uncompleted task"
-                        )
-                
-                    debug_log(response_json)    
-                    responseparsed = response_json["choices"][0]["message"]["content"]
-                    
+def query_bot(messages, retries=api_retry):
+    debug_log(messages)
+    random_text, random_color = get_random_text_and_color(text_color_dict)
+    time.sleep(api_throttle)  # type: ignore
+    alternate_api(api_count)
+
+    with yaspin(text=random_text, color=random_color) as spinner:
+        for attempt in range(retries):  # type: ignore
+            try:
+
+                json_payload = json.dumps(
+                    {
+                        "model": model,
+                        "messages": messages,
+                        "max_tokens": max_tokens,
+                        "temperature": temperature,
+                        "top_p": top_p,
+                        "frequency_penalty": presence_penalty,
+                        "presence_penalty": presence_penalty,
+                    }
+                )
+
+                debug_log("JSON Payload: ", json_payload)
+                headers = {
+                    "api-key": api_key,
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {api_key}",
+                }
+
+                # BD PROXY REQUEST
+                if bd_enabled:
                     try:
-                        responseformatted = json.loads(responseparsed)
-                        debug_log(f"Parsed Choices Node: {responseparsed}")
-                        
-                    except:
-                        alternate_api(api_count)
-                        debug_log(
-                            f"Formatted non json response: {responseparsed}]")
-                        responsebad = create_json_message(
-                        responseparsed, "I need to always respond with the required json format", "No Command", "Current Task", "I need to respond in the required json format")
-                        responseformatted = json.loads(responsebad)
-                    
-                    debug_log("API Count: ", api_count)
-                    if responseformatted is not None:
-                        if "current_task" in responseformatted:
-                            reasoning = responseformatted["reasoning_80_words"]                                                        
-                            command_string = responseformatted["command_string"]
-                            command_argument = responseformatted["command_argument"]
-                            current_task = responseformatted["current_task"]
-                            self_prompt_action = responseformatted["self_prompt_action"]                            
-                            
-                            
+                        json_utf8 = json_payload.encode('utf-8')
+                        session_id = random.random()
+                        super_proxy_url = ('http://%s-session-%s:%s@zproxy.lum-superproxy.io:%d' %
+                                           (bd_username, session_id, bd_password, bd_port))
+                        proxy_handler = urllib.request.ProxyHandler({
+                            'http': super_proxy_url,
+                            'https': super_proxy_url,
+                        })
+                        ssl._create_default_https_context = ssl._create_unverified_context
+                        opener = urllib.request.build_opener(proxy_handler)
+                        req = urllib.request.Request(
+                            api_url, data=json_utf8, headers=headers)
+                        # BRIGHT DATA REQUEST
+                        request = opener.open(req, timeout=api_timeout)
+                        uresponse = request.read()
+                        utfresponse = uresponse.decode('utf-8')
+                        botresponse = json.loads(utfresponse)
+                        response_json = botresponse
+                        debug_log("Bot reply: ", botresponse)
+
+                    except Exception as e:
+                        if attempt < retries - 1:  # type: ignore
+                            print(f"Error occurred: {str(e)}...Retrying...")
+
+                            time.sleep(2 ** attempt)
+                else:
+                    # STANDARD API REQUEST
+
+                    if not bd_enabled:
+                        try:
+                            botresponse = requests.request(
+                                "POST", api_url, headers=headers, data=json_payload, timeout=api_timeout)  # type: ignore
+                            response_json = botresponse.json()
+                        except ReadTimeout as e:
+                            if attempt < retries - 1:  # type: ignore
+                                print(
+                                    f"ReadTimeout Error occurred: {str(e)}...Retrying...")
+                                time.sleep(2 ** attempt)
+                                continue
+                            else:
+                                return (
+                                    "Unknown API Error: Resend response in the correct json format",
+                                    " ",
+                                    " ",
+                                    "Starting with the first uncompleted task in the task list",
+                                    "I will respond using the required json format and continue with the first uncompleted task"
+                                )
+                        except Exception as e:
+                            print(f"Error occurred: {str(e)}")
                             return (
-                                reasoning,
-                                command_string,
-                                command_argument,
-                                current_task,
-                                self_prompt_action,
-                            )
-                            
-                        else:                            
-                            
-                            return (
-                                "Invalid JSON Format, please use the correct format.",
+                                "Unknown API Error: Resend response in the correct json format",
                                 " ",
                                 " ",
                                 "Starting with the first uncompleted task in the task list",
                                 "I will respond using the required json format and continue with the first uncompleted task"
                             )
-        
-                except Exception as e:
-                    if attempt < retries - 1: #type: ignore
-                        print(f"API Timeout, increase your timeout: {str(e)}...Retrying...")
-                        
-                        time.sleep(2**attempt)
+
+                debug_log("Bot reply: ", botresponse)
+                # Handling error response
+                if "error" in response_json:
+                    error_message = response_json["error"]["message"]
+                    print(f"Error: {error_message}")
+
+                    return (
+                        f"API error {error_message}",
+                        " ",
+                        " ",
+                        "Starting with the first uncompleted task in the task list",
+                        "I will respond using the required json format and continue with the first uncompleted task"
+                    )
+
+                debug_log(response_json)
+                responseparsed = response_json["choices"][0]["message"]["content"]
+
+                try:
+                    responseformatted = json.loads(responseparsed)
+                    debug_log(f"Parsed Choices Node: {responseparsed}")
+
+                except:
+                    alternate_api(api_count)
+                    debug_log(
+                        f"Formatted non json response: {responseparsed}]")
+                    responsebad = create_json_message(
+                        responseparsed, "I need to always respond with the required json format", "No Command", "Current Task", "I need to respond in the required json format")
+                    responseformatted = json.loads(responsebad)
+
+                debug_log("API Count: ", api_count)
+                if responseformatted is not None:
+                    if "current_task" in responseformatted:
+                        reasoning = responseformatted["reasoning_80_words"]
+                        command_string = responseformatted["command_string"]
+                        command_argument = responseformatted["command_argument"]
+                        current_task = responseformatted["current_task"]
+                        self_prompt_action = responseformatted["self_prompt_action"]
+
+                        return (
+                            reasoning,
+                            command_string,
+                            command_argument,
+                            current_task,
+                            self_prompt_action,
+                        )
+
                     else:
-                        print("API Retries reached, insert another coin and try again...")
-                        exit
-        
+
+                        return (
+                            "Invalid JSON Format, please use the correct format.",
+                            " ",
+                            " ",
+                            "Starting with the first uncompleted task in the task list",
+                            "I will always respond using the required json format and continue with the first uncompleted task"
+                        )
+
+            except Exception as e:
+                if attempt < retries - 1:  # type: ignore
+                    print(
+                        f"API Timeout, increase your timeout: {str(e)}...Retrying...")
+
+                    time.sleep(2**attempt)
+                else:
+                    print("API Retries reached, insert another coin and try again...")
+                    exit
 
 
 # endregion
@@ -628,7 +635,6 @@ def create_pdf_from_html(reasoning, command_string, command_argument, current_ta
         )
 
 
-
 # endregion
 
 # region ### SHELL COMMANDS ###
@@ -657,7 +663,7 @@ def run_bash_shell_command(
             command_argument,
             "I should research the error",
             self_prompt_action,
-            
+
         )
 
     return_code = process.returncode
@@ -703,21 +709,20 @@ def run_bash_shell_command(
                 :max_characters
             ]
 
-    debug_log("Shell response: ",shell_response)
+    debug_log("Shell response: ", shell_response)
     return create_json_message(
         "BASH Command Output: " + shell_response,
         command_string,
         command_argument,
         current_task,
-        "If success, Regenerate task list and mark this task complete.",
-        
-    )
+        "If success, Regenerate task list and mark task " + current_task + " completed.",
 
+    )
 
 
 # endregion
 
-#region ### WINDOWS COMMANDS ###
+# region ### WINDOWS COMMANDS ###
 
 def run_win_shell_command(
     reasoning, command_string, command_argument, current_task, self_prompt_action
@@ -743,7 +748,7 @@ def run_win_shell_command(
             command_argument,
             "I should research the error",
             self_prompt_action,
-            
+
         )
 
     return_code = process.returncode
@@ -782,7 +787,7 @@ def run_win_shell_command(
                 "Shell Command Output: "
                 + f"{output.decode('utf-8').strip()}"[:max_characters]
             )
-            
+
         else:
             set_global_success(False)
             # Add slicing to limit error length
@@ -795,11 +800,11 @@ def run_win_shell_command(
         "Windows Command Output: " + shell_cleaned,
         command_string,
         command_argument,
-        "If success, Regenerate task list and mark this task complete.",
-        
+        "If success, Regenerate task list and mark task " + current_task + " completed.",
+
     )
 
-#endregion
+# endregion
 
 # region ### ALLOWS MODEL TO CONTINUE ###
 
@@ -822,7 +827,7 @@ def self_prompt(
 
 def save_research(reasoning, command_string, command_argument, current_task, self_prompt_action):
     # Get the current datetime
-    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     # Create the research entry with the datetime and content
     research_entry = f"DateTime: {current_time}\nContent: {command_argument.strip()}\n\n"
@@ -847,7 +852,7 @@ def save_research(reasoning, command_string, command_argument, current_task, sel
         command_string,
         command_argument,
         current_task,
-        "If success, Regenerate task list and mark this task complete.",
+        "If success, Regenerate task list and mark task " + current_task + " completed.",
     )
 # endregion
 
@@ -869,13 +874,13 @@ def fetch_research(reasoning, command_string, command_argument, current_task, se
             current_task,
             self_prompt_action,
         )
-        
+    research_data = json.dumps(formatted_research)
     return create_json_message(
-        formatted_research,
+        research_data,
         command_string,
         command_argument,
         current_task,
-        "If success, Regenerate task list and mark this task complete.",
+        "If success, Regenerate task list and mark task " + current_task + " completed.",
     )
 # endregion
 
@@ -893,8 +898,8 @@ def create_task_list(
         command_string,
         command_argument,
         current_task,
-        "If success, Regenerate task list and mark this task complete.",
-        
+        "Double check task list to ensure its detailed enough so only one command is issued per item.",
+
     )
 
 
@@ -917,7 +922,7 @@ def file_operations(reasoning, command_string, command_argument, current_task, s
         current_task = "File Management"
         self_prompt_action = "Performing " + operation.capitalize()
         operation_result = ""
-    
+
         try:
             if operation == "write":
                 with open(file_path, "w") as file:
@@ -938,7 +943,8 @@ def file_operations(reasoning, command_string, command_argument, current_task, s
                 operation_result = "File Renamed: " + new_name
             elif operation == "move":
                 destination_path = content.strip()
-                destination_path = os.path.join(working_folder, destination_path)
+                destination_path = os.path.join(
+                    working_folder, destination_path)
                 shutil.move(file_path, destination_path)
                 operation_result = "File Moved: " + destination_path
             elif operation == "delete":
@@ -950,19 +956,21 @@ def file_operations(reasoning, command_string, command_argument, current_task, s
             debug_log("File Operation Error : Folder does not exist" + command_string + command_argument +
                       current_task + self_prompt_action)
             return create_json_message("Error: Folder does not exist. Please make sure the folder exists before performing file operations.", command_string, command_argument, current_task, "Retry with an existing folder")
-    
+
         operation_cleaned = json.dumps(operation_result)
         debug_log("File Operation : " + operation_cleaned + command_string + command_argument +
                   current_task + "Complete: Regenerate task list with item completed and add the filename to the tasklist.")
-        return create_json_message(operation_cleaned, command_string, command_argument, operation_cleaned, "If success, Regenerate task list and mark this task complete.")
+        return create_json_message(operation_cleaned, command_string, command_argument, operation_cleaned, "If success, Regenerate task list and mark task " + current_task + " completed.")
     except ValueError:
         debug_log("File Operation Error : " + reasoning + command_string + command_argument +
                   current_task + self_prompt_action)
         return create_json_message("Error: Every argument must contain this format:(filename|```content```|operation) The filename is the name of the file you want to operate on. The content needs to be formatted text or formatted code as a multiline string using triple backticks (```). For file rename and move operations, the content needs be the new name or destination path, respectively. The following file operations are valid: 'write', 'read', 'append', 'rename', 'move', 'delete'. Read files to verify.", command_string, command_argument, current_task, "Retry using a valid file_operation format and operation")
-    
+
 # endregion
 
-#region ### DOWNLOAD FILES ###
+# region ### DOWNLOAD FILES ###
+
+
 def download_file(reasoning, command_string, command_argument, current_task, self_prompt_action):
     if not os.path.exists(working_folder):
         os.makedirs(working_folder)
@@ -981,23 +989,23 @@ def download_file(reasoning, command_string, command_argument, current_task, sel
 
         if process.returncode == 0:
             return create_json_message(
-            "File downloaded successfully and saved to local folder",
-            command_string,
-            command_argument,
-            current_task,
-                "If success, Regenerate task list and mark this task complete.",
-            
-        )
-        
+                "File downloaded successfully and saved to local folder",
+                command_string,
+                command_argument,
+                current_task,
+                "If success, Regenerate task list and mark task " + current_task + " completed.",
+
+            )
+
         else:
             return create_json_message(
-            "Error downloading file",
-            command_string,
-            command_argument,
-            current_task,
-            self_prompt_action,
-            
-        )
+                "Error downloading file",
+                command_string,
+                command_argument,
+                current_task,
+                self_prompt_action,
+
+            )
 
     except subprocess.CalledProcessError as e:
         return create_json_message(
@@ -1006,14 +1014,15 @@ def download_file(reasoning, command_string, command_argument, current_task, sel
             command_argument,
             current_task,
             self_prompt_action,
-            
+
         )
 
-#endregion        
+# endregion
 
 # region ### SEARCH ENGINE ###
 
-#GOOGLE API
+
+# GOOGLE API
 if search_engine_mode == "GOOGLE":
     def search_engine(
         reasoning, command_string, command_argument, current_task, self_prompt_action
@@ -1034,7 +1043,8 @@ if search_engine_mode == "GOOGLE":
             results = []
             if "items" in data:
                 for item in data["items"]:
-                    results.append({"title": item["title"], "link": item["link"]})
+                    results.append(
+                        {"title": item["title"], "link": item["link"]})
             else:
                 set_global_success(False)
                 return create_json_message(
@@ -1051,7 +1061,8 @@ if search_engine_mode == "GOOGLE":
                 formatted_results += f"Title: {result['title']}"
                 formatted_results += f"Link: {result['link']}"
 
-            searchresults = json.dumps(formatted_results.replace('\n', '').replace('\\n', ''))
+            searchresults = json.dumps(
+                formatted_results.replace('\n', '').replace('\\n', ''))
 
             debug_log("Google Search: ", searchresults)
             set_global_success(True)
@@ -1061,7 +1072,7 @@ if search_engine_mode == "GOOGLE":
                 command_string,
                 command_argument,
                 current_task,
-                "If success, Regenerate task list and mark this task complete."
+                "If success, Regenerate task list and mark task " + current_task + " completed."
             )
         except Exception as e:
             debug_log(f"Error: {str(e)}")
@@ -1074,7 +1085,7 @@ if search_engine_mode == "GOOGLE":
                 "I will double check my arguments or move to next task.",
             )
 
-#SERP API
+# SERP API
 elif search_engine_mode == "SERP":
 
     def search_engine(reasoning, command_string, command_argument, current_task, self_prompt_action):
@@ -1086,19 +1097,20 @@ elif search_engine_mode == "SERP":
             "safe": "-2",
             "num": 5
         }
-    
+
         search = GoogleSearch(params)
         results = search.get_dict()
         formatted_results = []
-    
+
         loop_limit = 5
-    
+
         for index, result in enumerate(results["organic_results"], start=1):
             if index <= loop_limit:
                 title = result['title'].replace('\n', '').replace('\n', '')
                 link = result['link'].replace('\n', '').replace('\n', '')
-                formatted_results.append({"index": index, "title": title, "link": link})
-    
+                formatted_results.append(
+                    {"index": index, "title": title, "link": link})
+
         if not formatted_results:
             debug_log("SERP Error: ", formatted_results)
             return create_json_message(
@@ -1108,7 +1120,7 @@ elif search_engine_mode == "SERP":
                 current_task,
                 "Retry or choose another search term."
             )
-    
+
         sanitized_results = json.dumps(formatted_results)
         debug_log("SERP Sanitized: ", sanitized_results)
         return create_json_message(
@@ -1116,9 +1128,8 @@ elif search_engine_mode == "SERP":
             command_string,
             command_argument,
             current_task,
-            "If success, Regenerate task list and mark this task complete."
+            "If success, Regenerate task list and mark task " + current_task + " completed."
         )
-    
 
 
 # endregion
@@ -1154,7 +1165,8 @@ def browse_website_url(reasoning, command_string, command_argument, current_task
     # Keep only A-Z, a-z, and spaces
     extracted_text = re.sub(r'[^A-Za-z\s]', '', extracted_text)
 
-    sanitized_text = json.dumps(extracted_text)  # Initialize sanitized_text to extracted_text
+    # Initialize sanitized_text to extracted_text
+    sanitized_text = json.dumps(extracted_text)
 
     # type: ignore
     if max_characters is not None and len(extracted_text) > max_characters:
@@ -1167,7 +1179,7 @@ def browse_website_url(reasoning, command_string, command_argument, current_task
         "command_string",
         command_argument,
         current_task,
-        "If success, Regenerate task list and mark this task complete.",
+        "If success, Regenerate task list and mark task " + current_task + " completed.",
     )
 
 
@@ -1190,7 +1202,7 @@ def mission_accomplished(
 
 
 def message_handler(current_prompt, message, role):
-    
+
     def update_message_history(role, content):
         try:
             message_history.append({"role": role, "content": content})
@@ -1206,9 +1218,8 @@ def message_handler(current_prompt, message, role):
             )
 
     def limit_message_history():
-        while len(message_history) > max_conversation + 1: #type: ignore
+        while len(message_history) > max_conversation + 1:  # type: ignore
             message_history.pop(2)
-
 
     if len(message_history) == 0:
         message_history.insert(
@@ -1219,7 +1230,8 @@ def message_handler(current_prompt, message, role):
     if message is not None:
         if role == "task":
             message_history.pop(1)
-            message_history.insert(1, {"role": "assistant", "content": message})
+            message_history.insert(
+                1, {"role": "assistant", "content": message})
             return
         else:
             update_message_history(role, message)
@@ -1283,33 +1295,33 @@ def bbs_ascii_lordgpt():
         for letter in word:
             line += letters[letter][row] + " "
         print(line)
-#endregion
+# endregion
 
 
-def openai_bot_handler(current_prompt, message, role): 
-   
-        messages = message_handler(current_prompt, message, role)
-        (reasoning, command_string, command_argument, current_task, self_prompt_action) = query_bot(messages)      
+def openai_bot_handler(current_prompt, message, role):
 
-        
-        print(colored("LordGPT Thoughts: ", color="yellow"), end="")
-        typing_print(str(reasoning))
-        print(colored("Currently :       ", color="green"), end="")
-        typing_print(str(current_task) + "")
-        print(colored("Next Task:        ", color="blue"), end="")
-        typing_print(str(self_prompt_action) + "")
-        print(colored("Executing CMD:    ", color="red"), end="")
-        typing_print(str(command_string))
-        print(colored("CMD Argument:     ", color="red"), end="")
-        typing_print(str(command_argument) + "\n\n")
-        handler_response = command_handler(
-            reasoning, command_string, command_argument, current_task, self_prompt_action
-        ) 
-        
-        if success == True:
+    messages = message_handler(current_prompt, message, role)
+    (reasoning, command_string, command_argument,
+     current_task, self_prompt_action) = query_bot(messages)
 
-            return handler_response
+    print(colored("LordGPT Thoughts: ", color="yellow"), end="")
+    typing_print(str(reasoning))
+    print(colored("Currently :       ", color="green"), end="")
+    typing_print(str(current_task) + "")
+    print(colored("Next Task:        ", color="blue"), end="")
+    typing_print(str(self_prompt_action) + "")
+    print(colored("Executing CMD:    ", color="red"), end="")
+    typing_print(str(command_string))
+    print(colored("CMD Argument:     ", color="red"), end="")
+    typing_print(str(command_argument) + "\n\n")
+    handler_response = command_handler(
+        reasoning, command_string, command_argument, current_task, self_prompt_action
+    )
+
+    if success == True:
+
         return handler_response
+    return handler_response
 
 
 # endregion
@@ -1319,13 +1331,15 @@ def openai_bot_handler(current_prompt, message, role):
 
 def main_loop():
     research_file = os.path.join(working_folder, "research.txt")
+    debug_file = os.path.join(working_folder, "debug.txt")
 
     if os.path.exists(research_file):
         os.remove(research_file)
-        print(colored("research.txt file deleted.", "green"))
+
+    if os.path.exists(debug_file):
+        os.remove(debug_file)
 
     print(colored("Tips: ", "green"))
-
 
     print(
         colored(
@@ -1334,7 +1348,7 @@ def main_loop():
             "\n3. Report Issues: https://github.com/Cytranics/LordGPT/issues"
             "\n4. Discord: https://discord.gg/2jT32cM8", "yellow",
         )
-)
+    )
 
     user_goal = input("Goal: ")
     print(colored("Creating detailed plan to achive the goal....", "green"))
@@ -1343,8 +1357,8 @@ def main_loop():
         print(colored("Goal: " + user_goal, "green"))
     set_global_success(True)
     alternate_api(api_count)
-    bot_send =  openai_bot_handler(bot_prompt + user_goal, f"""{{"reasoning_80_words": "Respond with your detailed formatted task list for the goal by replacing [TASKLIST]", "command_string": "[COMMAND]", "command_argument": "[ARGUMENT]", "current_task": "[CURRENT TASK]", "self_prompt_action": "[SUGGESTED NEXT TASK]"}}""", "assistant")
-
+    bot_send = openai_bot_handler(
+        bot_prompt + user_goal, f"""{{"reasoning_80_words": "Respond with your detailed formatted task list for the goal by replacing [TASKLIST]", "command_string": "[COMMAND]", "command_argument": "[ARGUMENT]", "current_task": "[CURRENT TASK]", "self_prompt_action": "[SUGGESTED NEXT TASK]"}}""", "assistant")
 
     while True:
         num_input = input(
@@ -1353,22 +1367,22 @@ def main_loop():
         try:
             num_iterations = int(num_input) if num_input.strip() else 1
         except ValueError:
-            
+
             print("Invalid input. Using default value of 1.")
             num_iterations = 1
-    
+
         for _ in range(num_iterations):
             loop = bot_send
             bot_send = openai_bot_handler(bot_prompt, loop, "assistant")
             loop = bot_send
-    
-        continue_choice = input("Is LordG on the right track If not, select n? (y/n): ").lower()
+
+        continue_choice = input(
+            "Is LordG on the right track If not, select n? (y/n): ").lower()
         if continue_choice == "n":
             new_direction = input("Correct LordGPT: ")
             openai_bot_handler(
                 bot_prompt, f"""{{"reasoning_80_words": "{new_direction}", "command_string": "[COMMAND]", "command_argument": "[ARGUMENT]", "current_task": "[CURRENT TASK]", "self_prompt_action": "[SUGGESTED NEXT TASK]"}}""", "user")
             break
-    
 
 
 if __name__ == "__main__":
