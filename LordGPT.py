@@ -31,8 +31,8 @@ import urllib.request
 from playwright.sync_api import sync_playwright
 
 # Local file imports
-from scripts.bot_prompts import command_list, bot_prompt
-from scripts.bot_commands import botcommands
+from scripts.bot_prompts import *
+from scripts.bot_commands import *
 # endregion
 current_version = "1.8.3"
 
@@ -58,6 +58,8 @@ changelog_url = "https://thelordg.com/downloads/changelog.txt"
 download_link = "https://thelordg.com/downloads/LordGPT.exe"
 message_history = []
 global api_type
+current_task = ""
+user_goal = ""
 # endregion
 
 # region GLOBAL FUNCTIONS
@@ -518,7 +520,7 @@ def query_bot(messages, retries=api_retry):
                     alternate_api(api_count)
                     debug_log(f"LordGPT Responsed with invalid json, but we will fix on our end.: {responseparsed}]")
                     print("LordGPT Responsed with invalid json, but we will fix on our end.")
-                    fixed_response = create_json_message("Format all responses as the required json format and resend previous reply", "Resend last command", "resend last argument", "repeate the current task", "I will only respond using the required json format from now on")       
+                    fixed_response = create_json_message(responseparsed)       
                     responseformatted = json.loads(fixed_response)
 
                 debug_log("API Count: ", api_count)
@@ -576,7 +578,7 @@ def create_pdf_from_html(reasoning, command_string, command_argument, current_ta
                 command_string,
                 command_argument,
                 current_task,
-                "I need to replace the entire ```[HTML MARKUP]``` with an actual HTML string formatted with backtiks.",
+                "I need to replace the entire ```[CONTENT]``` with an actual HTML string formatted with backtiks.",
             )
 
         content = content_match.group(1).strip()
@@ -584,11 +586,11 @@ def create_pdf_from_html(reasoning, command_string, command_argument, current_ta
         # Check if content is [HTML MARKUP]
         if content.lower() == "```[HTML MARKUP]```":
             return create_json_message(
-                "Error: Invalid Content. You must replace ```[HTML MARKUP]``` with the HTML string formatted with backtiks.",
+                "Error: Invalid Content. You must replace ```[CONTENT]``` with the HTML string formatted with backtiks.",
                 command_string,
                 command_argument,
                 current_task,
-                "I need to replace the entire ```[HTML MARKUP]``` with an actual HTML string formatted with backtiks.",
+                "I need to replace the entire ```[CONTENT]``` with an actual HTML string formatted with backtiks.",
             )
 
         # Parse the input string to extract the filename and content
@@ -617,7 +619,7 @@ def create_pdf_from_html(reasoning, command_string, command_argument, current_ta
             command_string,
             command_argument,
             current_task,
-            "If success, Regenerate task list with task: " + current_task + " completed.",
+            message_command_self_prompt,
         )
     except Exception as e:
         debug_log(f"Error: {e}")
@@ -657,7 +659,7 @@ def run_shell_command(
             command_string,
             command_argument,
             "The command could have suceeded, I will test",
-            "Test to see if command succeeded",
+            message_command_self_prompt,
 
         )
 
@@ -706,11 +708,11 @@ def run_shell_command(
 
     debug_log("Shell response: ", shell_response)
     return create_json_message(
-        "BASH Command Output: " + shell_response,
+        "Shell Command Output: " + shell_response,
         command_string,
         command_argument,
         current_task,
-        "If success, Regenerate task list and mark task " + current_task + " completed.",
+        message_command_self_prompt,
 
     )
 
@@ -747,7 +749,7 @@ def save_research(reasoning, command_string, command_argument, current_task, sel
         command_string,
         command_argument,
         current_task,
-        "If success, Regenerate task list and mark task " + current_task + " completed.",
+        message_command_self_prompt,
     )
 # endregion
 
@@ -775,7 +777,7 @@ def fetch_research(reasoning, command_string, command_argument, current_task, se
         command_string,
         command_argument,
         current_task,
-        "If success, Regenerate task list and mark task " + current_task + " completed.",
+        message_command_self_prompt,
     )
 # endregion
 
@@ -911,7 +913,7 @@ if search_engine_mode == "GOOGLE":
                 command_string,
                 command_argument,
                 current_task,
-                "If success, Regenerate task list and mark task " + current_task + " completed."
+                message_command_self_prompt
             )
         except Exception as e:
             debug_log(f"Error: {str(e)}")
@@ -967,7 +969,7 @@ elif search_engine_mode == "SERP":
             command_string,
             command_argument,
             current_task,
-            "If success, Regenerate task list and mark task " + current_task + " completed."
+            message_command_self_prompt
         )
 
 
@@ -1018,7 +1020,7 @@ def browse_website_url(reasoning, command_string, command_argument, current_task
         command_string,
         command_argument,
         current_task,
-        "If success, Regenerate task list and mark task " + current_task + " completed.",
+        message_command_self_prompt,
     )
 
 
@@ -1197,7 +1199,7 @@ def main_loop():
     set_global_success(True)
     alternate_api(api_count)
     bot_send = openai_bot_handler(
-        bot_prompt + user_goal, f"""{{"reasoning_80_words": "Respond with a detailed formatted task list to ensure only one command is needed per item, replace [TASKLIST]", "command_string": "[COMMAND]", "command_argument": "[ARGUMENT]", "current_task": "[CURRENT TASK]", "self_prompt_action": "[SELF PROMPT NEXT ACTION]"}}""", "assistant")
+        bot_prompt + user_goal, message_initial_gpt4, "assistant")
 
     while True:
         num_input = input(
