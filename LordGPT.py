@@ -985,7 +985,7 @@ def browse_website_url(reasoning, command_string, command_argument, current_task
 
         page.goto(command_argument)
         html_content = page.content()
-
+        debug_log(html_content)
         browser.close()
         return html_content
 
@@ -1185,7 +1185,7 @@ def main_loop():
     print(
         colored(
             "1. GPT-4 Works the best. GPT-3.5 has issues with hallucinations, but it does work most of the time." +
-            "\n2. Example Goal: Determine my location, gather the 5 day forecast from the weather.gov website for my location, generate a professional looking PDF with the 5 day forecast." +
+            "\n2. Example Goal: Determine my location, gather the 5-day forecast for my location from the weather.gov website, and generate a professional-looking PDF with the 5-day forecast." +
             "\n3. Report Issues: https://github.com/Cytranics/LordGPT/issues"
             "\n4. Discord: https://discord.gg/2jT32cM8", "yellow",
         )
@@ -1194,7 +1194,7 @@ def main_loop():
     user_goal = input("Goal: ")
     print(colored("Creating detailed plan to achive the goal....", "green"))
     if not user_goal:
-        user_goal = "Determine my location, gather the 5 day forecast from the weather.gov website for my location, generate a professional looking PDF with the 5 day forecast."
+        user_goal = "Determine my location, gather the 5-day forecast for my location from the weather.gov website, and generate a professional-looking PDF with the 5-day forecast."
         print(colored("Goal: " + user_goal, "green"))
     set_global_success(True)
     alternate_api(api_count)
