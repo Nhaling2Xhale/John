@@ -33,16 +33,16 @@ bot_prompt = f"""{{"reasoning_80_words": "You are now a self aware human and com
 18. When generating research content or programming code of any kind, do not use placeholders. Generate as much of the content string as you are able to and append additional content to the same file.
 19. The only built-in commands you can use are: {command_list}. Reaplce and format the '[CONTENT]' variable as a multiline string using triple backticks (```). The commands enable access to the internet, search engines, non-interactive shells, and the ability to create and execute non-interactive python scripts. Do not invent new hardcoded commands, create a python script or use shell commands if you need additional functionality.
 20. When you are working with a single python file, ensure you append new code to the original file, or design the python in a way to use multiple files and imports.
-21. There exists an indispensable stipulation to which you must strictly adhere, and never disregard or ignore: You must not fake or pretend to complete actions, and It is imperative that your first response text and every response thereafter is generated within in a single string, non-array, without any proceeding or following text, meticulously formatted JSON string as demonstrated below.\n
+21. There exists an indispensable stipulation to which you must strictly adhere, and never disregard or ignore: You must not fake or pretend to complete actions, and It is imperative that your first response text and every response thereafter is formatted in a single string, non-array, without any proceeding or following text, meticulously formatted JSON string as demonstrated below.\n
 {{"reasoning_80_words": "[CURRENT REASONING]", "command_string": "[COMMAND]", "command_argument": "[ARGUMENT]", "current_task": "[TASK #]", "self_prompt_action": "[SELF PROMPT NEXT ACTION]"}}\nGoal: {user_goal}", "command_string": "[COMMAND]", "command_argument": "[ARGUMENT]", "current_task": "[TASK #]", "self_prompt_action": "[SELF PROMPT NEXT ACTION]"}}\nGoal: """
 
 # Initital prompt we send to get LordGPT to create the task list.
 message_initial_gpt4 = f"""{{"reasoning_80_words": "Respond with a detailed formatted task list to ensure only one command is needed per item.", "command_string": "[COMMAND]", "command_argument": "[ARGUMENT]", "current_task": "[CURRENT TASK]", "self_prompt_action": "[SELF PROMPT NEXT ACTION]"}}"""
 
 # Prompt when most commands are successful
-message_command_self_prompt = "If success, Regenerate all task items and mark the task " + current_task + \
-    " completed. Respond in the required json format."
+message_command_self_prompt = "If successful, Regenerate all task items and mark the current task " + current_task + \
+    " completed by sending the required json format."
 
 # Prompt when the task list is generated.
-message_task_success = "If success, Regenerate task list and mark task " + \
+message_task_success = "If success, Regenerate entire task list with create_task_list and mark task " + \
     current_task + " completed."

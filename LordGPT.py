@@ -407,7 +407,7 @@ text_color_dict = {
 
 
 def query_bot(messages, retries=api_retry):
-    debug_log(messages)
+    debug_log("Messages before API: ", messages)
     random_text, random_color = get_random_text_and_color(text_color_dict)
     time.sleep(api_throttle)  # type: ignore
     alternate_api(api_count)
@@ -1089,6 +1089,11 @@ def message_handler(current_prompt, message, role):
 def command_handler(
     reasoning, command_string, command_argument, current_task, self_prompt_action
 ):
+    if not command_string.strip():
+        return function(
+        reasoning, command_string, command_argument, current_task, self_prompt_action
+    )
+
     function = globals().get(command_string)
     if function is None:
         debug_log(
@@ -1100,6 +1105,7 @@ def command_handler(
     return function(
         reasoning, command_string, command_argument, current_task, self_prompt_action
     )
+
 
 
 # endregion
