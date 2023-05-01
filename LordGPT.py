@@ -762,7 +762,7 @@ def save_research(reasoning, command_string, command_argument, current_task, sel
     content = match.group(3).strip()
 
     # Remove the triple backticks, newline characters, and extra spaces from the content
-    content = content.replace("```", "").replace("\n", "").replace("  ", "")
+    content = content.replace("```", "")
 
     # Get the current datetime
     current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
