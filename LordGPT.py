@@ -614,7 +614,7 @@ def create_pdf_from_html(reasoning, command_string, command_argument, current_ta
                 command_string,
                 command_argument,
                 current_task,
-                message_command_self_prompt,
+                self_prompt_action,
 
             )
 
@@ -633,7 +633,7 @@ def create_pdf_from_html(reasoning, command_string, command_argument, current_ta
             command_string,
             command_argument,
             current_task,
-            message_command_self_prompt,
+            self_prompt_action,
 
         )
 
@@ -675,7 +675,7 @@ def run_shell_command(
             command_string,
             command_argument,
             "The command could have suceeded, I will test",
-            message_command_self_prompt,
+            self_prompt_action,
 
         )
 
@@ -730,7 +730,7 @@ def run_shell_command(
         command_string,
         command_argument,
         current_task,
-        message_command_self_prompt,
+        self_prompt_action,
 
     )
 
@@ -752,7 +752,7 @@ def save_research(reasoning, command_string, command_argument, current_task, sel
             command_string,
             "Invalid Argument",
             current_task,
-            message_command_self_prompt,
+            self_prompt_action,
 
         )
 
@@ -789,7 +789,7 @@ def save_research(reasoning, command_string, command_argument, current_task, sel
         command_string,
         "Success: Researched saved successfully",
         current_task,
-        message_command_self_prompt,
+        self_prompt_action,
 
     )
 
@@ -820,7 +820,7 @@ def fetch_research(reasoning, command_string, command_argument, current_task, se
         command_string,
         research_data,
         current_task,
-        message_command_self_prompt,
+        self_prompt_action,
     )
 # endregion
 
@@ -954,7 +954,7 @@ if search_engine_mode == "GOOGLE":
                 command_string,
                 command_argument,
                 current_task,
-                message_command_self_prompt
+                self_prompt_action
             )
         except Exception as e:
             
@@ -1010,7 +1010,7 @@ elif search_engine_mode == "SERP":
             command_string,
             command_argument,
             current_task,
-            message_command_self_prompt
+            self_prompt_action
         )
 
 
@@ -1062,7 +1062,7 @@ def browse_website_url(reasoning, command_string, command_argument, current_task
         command_string,
         command_argument,
         current_task,
-        message_command_self_prompt,
+        self_prompt_action,
     )
 
 
