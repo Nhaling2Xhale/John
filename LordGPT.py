@@ -1090,7 +1090,7 @@ def command_handler(
     reasoning, command_string, command_argument, current_task, self_prompt_action
 ):
     if not command_string.strip():
-        return function(
+        return create_json_message(
         reasoning, command_string, command_argument, current_task, self_prompt_action
     )
 
