@@ -614,7 +614,7 @@ def create_pdf_from_html(reasoning, command_string, command_argument, current_ta
                 command_string,
                 command_argument,
                 current_task,
-                self_prompt_action,
+                message_command_self_prompt,
 
             )
 
@@ -633,7 +633,7 @@ def create_pdf_from_html(reasoning, command_string, command_argument, current_ta
             command_string,
             command_argument,
             current_task,
-            self_prompt_action,
+            message_command_self_prompt,
 
         )
 
@@ -675,7 +675,7 @@ def run_shell_command(
             command_string,
             command_argument,
             "The command could have suceeded, I will test",
-            self_prompt_action,
+            message_command_self_prompt,
 
         )
 
@@ -725,12 +725,13 @@ def run_shell_command(
             ]
 
     print("Shell Command Output: " + shell_response)
+    shell_cleaned = json.dumps(shell_response)
     return create_json_message(
-        "Shell Command Output: " + shell_response,
+        "Shell Command Executed.",
         command_string,
-        command_argument,
+        "Shell Command Output: " + shell_cleaned,
         current_task,
-        self_prompt_action,
+        message_command_self_prompt,
 
     )
 
@@ -752,7 +753,7 @@ def save_research(reasoning, command_string, command_argument, current_task, sel
             command_string,
             "Invalid Argument",
             current_task,
-            self_prompt_action,
+            message_command_self_prompt,
 
         )
 
@@ -781,7 +782,7 @@ def save_research(reasoning, command_string, command_argument, current_task, sel
             command_string,
             "Failed to save research, the file doesn't exist.",
             current_task,
-            self_prompt_action,
+            message_command_self_prompt,
         )
 
     return create_json_message(
@@ -789,7 +790,7 @@ def save_research(reasoning, command_string, command_argument, current_task, sel
         command_string,
         "Success: Researched saved successfully",
         current_task,
-        self_prompt_action,
+        message_command_self_prompt,
 
     )
 
@@ -812,7 +813,7 @@ def fetch_research(reasoning, command_string, command_argument, current_task, se
             command_string,
             command_argument,
             current_task,
-            self_prompt_action,
+            message_command_self_prompt,
         )
     research_data = json.dumps(formatted_research)
     return create_json_message(
@@ -820,7 +821,7 @@ def fetch_research(reasoning, command_string, command_argument, current_task, se
         command_string,
         research_data,
         current_task,
-        self_prompt_action,
+        message_command_self_prompt,
     )
 # endregion
 
@@ -839,7 +840,7 @@ def create_task_list(
         command_string,
         command_argument,
         current_task,
-        self_prompt_action,
+        message_command_self_prompt,
 
     )
 
@@ -896,7 +897,7 @@ def file_operations(reasoning, command_string, command_argument, current_task, s
             return create_json_message("Error: Folder does not exist. Please make sure the folder exists before performing file operations.", command_string, command_argument, current_task, "Retry with an existing folder")
 
         operation_cleaned = json.dumps(operation_result)        
-        return create_json_message(operation_cleaned, command_string, command_argument, current_task, self_prompt_action)
+        return create_json_message(operation_cleaned, command_string, command_argument, current_task, message_command_self_prompt)
     except ValueError:
         return create_json_message("Error: Every argument must contain this format: (filename |```content```| operation) The filename is the name of the file you want to operate on. The content needs to be formatted text or formatted code asa multiline string using triple backticks (```). For file rename and move operations, the content needs be the new name or destination path, respectively. The following file operations are valid: 'write', 'read', 'append', 'rename', 'move', 'delete'. Read files to verify.", command_string, command_argument, current_task, " Retry using a valid file_operation format and operation")
 # endregion
@@ -954,7 +955,7 @@ if search_engine_mode == "GOOGLE":
                 command_string,
                 command_argument,
                 current_task,
-                self_prompt_action
+                message_command_self_prompt
             )
         except Exception as e:
             
@@ -1010,7 +1011,7 @@ elif search_engine_mode == "SERP":
             command_string,
             command_argument,
             current_task,
-            self_prompt_action
+            message_command_self_prompt
         )
 
 
@@ -1040,7 +1041,7 @@ def browse_website_url(reasoning, command_string, command_argument, current_task
             command_string,
             command_argument,
             current_task,
-            self_prompt_action,
+            message_command_self_prompt,
         )
 
     extracted_text = extract_text(result)
@@ -1062,7 +1063,7 @@ def browse_website_url(reasoning, command_string, command_argument, current_task
         command_string,
         command_argument,
         current_task,
-        self_prompt_action,
+        message_command_self_prompt,
     )
 
 
@@ -1135,7 +1136,7 @@ def command_handler(
     
     if not command_string.strip():
         return create_json_message(
-        reasoning, command_string, command_argument, current_task, self_prompt_action
+        reasoning, command_string, command_argument, current_task, message_command_self_prompt
     )
 
     function = globals().get(command_string)
@@ -1144,7 +1145,7 @@ def command_handler(
 
         return create_json_message("The command_string " + command_string + " is not a valid command string.", command_string, command_argument, current_task, "Double check the command string and respond in the required json format.")
     return function(
-        reasoning, command_string, command_argument, current_task, self_prompt_action
+        reasoning, command_string, command_argument, current_task, message_command_self_prompt
     )
 
 

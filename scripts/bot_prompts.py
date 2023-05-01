@@ -2,7 +2,7 @@ from scripts.bot_commands import botcommands
 from LordGPT import current_task, user_goal
 
 # ALL MODELS Prompt when most commands are successful ##############################################################
-message_command_self_prompt = "[DO NOT REPEAT: ADD FILE NAMES OR OTHER DETAILS TO THE COMPLETED TASK WHEN REGENERATING THE TASK LIST]"
+message_command_self_prompt = "If task was successful, regenerate my task list and mark the task complted."
 
 # ALL MODELS Prompt when the task list is generated. ###############################################################
 message_task_success = "[RESPOND ONLY IN JSON FORMAT, DOUBLE CHECK TASK LIST TO ENSURE ALL PREVIOUS TASKS ARE INCLUDED AND CAN BE PERFORMED WITH A SINGLE COMMAND.]"
