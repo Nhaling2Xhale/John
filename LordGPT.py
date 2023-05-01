@@ -35,7 +35,7 @@ from playwright.sync_api import sync_playwright
 from scripts.bot_prompts import *
 from scripts.bot_commands import *
 
-current_version = "1.8.5"
+current_version = "1.8.6"
 current_path = os.getcwd()
 working_folder = os.path.join(current_path, 'LordGPT_folder')
 if not os.path.exists(working_folder):
@@ -348,11 +348,11 @@ def create_json_message(
     self_prompt_action="",
 ):
     json_message = {
-        "reasoning_80_words": reasoning_80_words + " ",
-        "command_string": command_string + " ",
-        "command_argument": command_argument + " ",
-        "current_task": current_task + " ",
-        "self_prompt_action": self_prompt_action + " ",
+        "reasoning_80_words": reasoning_80_words,
+        "command_string": command_string,
+        "command_argument": command_argument,
+        "current_task": current_task,
+        "self_prompt_action": self_prompt_action,
     }
 
     return json.dumps(json_message)
