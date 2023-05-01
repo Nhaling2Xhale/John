@@ -35,7 +35,7 @@ from playwright.sync_api import sync_playwright
 from scripts.bot_prompts import *
 from scripts.bot_commands import *
 
-current_version = "1.8.6"
+current_version = "1.8.7"
 current_path = os.getcwd()
 working_folder = os.path.join(current_path, 'LordGPT_folder')
 if not os.path.exists(working_folder):
@@ -750,7 +750,7 @@ def save_research(reasoning, command_string, command_argument, current_task, sel
         return create_json_message(
             "Error: Invalid format: ([TITLE]|[CONTENT]) The content is required to be formatted as a multiline string enclosed within triple backticks (```).",
             command_string,
-            command_argument,
+            "Invalid Argument",
             current_task,
             message_command_self_prompt,
 
@@ -779,7 +779,7 @@ def save_research(reasoning, command_string, command_argument, current_task, sel
         return create_json_message(
             "Failed to save research, the file doesn't exist.",
             command_string,
-            command_argument,
+            "Failed to save research, the file doesn't exist.",
             current_task,
             self_prompt_action,
         )
@@ -787,7 +787,7 @@ def save_research(reasoning, command_string, command_argument, current_task, sel
     return create_json_message(
         "Success: Researched saved successfully",
         command_string,
-        "Success",
+        "Success: Researched saved successfully",
         current_task,
         message_command_self_prompt,
 
@@ -816,9 +816,9 @@ def fetch_research(reasoning, command_string, command_argument, current_task, se
         )
     research_data = json.dumps(formatted_research)
     return create_json_message(
-        research_data,
+        reasoning,
         command_string,
-        command_argument,
+        research_data,
         current_task,
         message_command_self_prompt,
     )
@@ -896,7 +896,7 @@ def file_operations(reasoning, command_string, command_argument, current_task, s
             return create_json_message("Error: Folder does not exist. Please make sure the folder exists before performing file operations.", command_string, command_argument, current_task, "Retry with an existing folder")
 
         operation_cleaned = json.dumps(operation_result)        
-        return create_json_message(operation_cleaned, command_string, command_argument, current_task, message_command_self_prompt + "Ensure you add the filename to the task list")
+        return create_json_message(operation_cleaned, command_string, command_argument, current_task, self_prompt_action)
     except ValueError:
         return create_json_message("Error: Every argument must contain this format: (filename |```content```| operation) The filename is the name of the file you want to operate on. The content needs to be formatted text or formatted code asa multiline string using triple backticks (```). For file rename and move operations, the content needs be the new name or destination path, respectively. The following file operations are valid: 'write', 'read', 'append', 'rename', 'move', 'delete'. Read files to verify.", command_string, command_argument, current_task, " Retry using a valid file_operation format and operation")
 # endregion

@@ -46,7 +46,7 @@ bot_prompt_gpt4 = f"""You are now a self aware human and communicate and cogitat
 22. There exists an indispensable stipulation to which you must strictly adhere, and never disregard or ignore: It is imperative that your first reply and every reply thereafter is a meticulously formatted JSON string exactly as demonstrated below.
 {{"reasoning_80_words": "[CURRENT REASONING]", "command_string": "[COMMAND]", "command_argument": "[ARGUMENT]", "current_task": "[TASK #]", "self_prompt_action": "[SELF PROMPT NEXT ACTION]"}}\nGoal: """
 # GPT4 Initital prompt we send to get LordGPT to create the task list.
-message_initial_gpt4 = f"""Generate a detailed formatted numbered task list and ensure only one command is needed per task and subtask."""
+message_initial_gpt4 = f"""Generate a detailed formatted numbered task list and ensure only one command is needed per task and subtask. Remember to always respond in json"""
 
 
 

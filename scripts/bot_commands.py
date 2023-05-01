@@ -11,13 +11,13 @@ botcommands = [
     },
     {
         "command_string": "file_operations",
-        "command_argument": "filename.ext|```[CONTENT]```|operationtype",
-        "command_description": "Used for all file operations, 'write', 'read', 'append', 'rename', 'move', 'delete'. For file rename and move operations, the content needs be the new name or destination path, respectively."
+        "command_argument": "[FILENAME.ext]|```[CONTENT]```|[OPERATION]",
+        "command_description": "Used for the following file operations, 'write', 'read', 'append', 'rename', 'move', 'delete'. For file rename and move operations, the [CONTENT] needs be the new name or destination path, respectively."
     },
     {
         "command_string": "search_engine",
         "command_argument": "[DETAILED SEARCH QUERY]",
-        "command_description": "Search Engine Provides a list of url's for scraping or browsing."
+        "command_description": "Search Engine Provides a list of urls for scraping or browsing."
     },
     {
         "command_string": "browse_website_url",
