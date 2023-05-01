@@ -318,11 +318,11 @@ def remove_brackets(text):
 
 # Create JSON message function
 def create_json_message(
-    reasoning_80_words="[DETAILED REASONING]",
-    command_string="[COMMAND]",
-    command_argument="[ARGUMENT]",
-    current_task="[CURRENT TASK]",
-    self_prompt_action="[SELF PROMPT NEXT ACTION]",
+    reasoning_80_words="",
+    command_string="",
+    command_argument="",
+    current_task="",
+    self_prompt_action="",
 ):
     json_message = {
         "reasoning_80_words": reasoning_80_words + " ",
@@ -1089,12 +1089,14 @@ def message_handler(current_prompt, message, role):
 def command_handler(
     reasoning, command_string, command_argument, current_task, self_prompt_action
 ):
+    debug_log("Command Handler: ", reasoning + command_string + command_argument + current_task + self_prompt_action)
     if not command_string.strip():
         return create_json_message(
         reasoning, command_string, command_argument, current_task, self_prompt_action
     )
 
     function = globals().get(command_string)
+    debug_log("Debug Function: ", function)
     if function is None:
         debug_log(
             "LordGPT Send an invalid command_string : "
