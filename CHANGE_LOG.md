@@ -1,3 +1,13 @@
+UPDATE 5-1-2023
+- New Debug code, Removed all old debug code.
+- GPT4 and GPT3 now have seperate prompts. This makes it easier to change things without effecting other models.
+- Moved alot of prompts into bot_prompts.py for ease.
+- Unified command argument handing. Everything uses pipes now.
+- Changed the way PDF generation is handled. LordGPT understands now he needs to send an HTML file to the command, not a string.
+- Deleting Research, Debug and Exception logs at startup.
+- Removed old leftover code.
+
+
 UDPATE: 4-30-2023
 - Added the option to choose between Google Search API and Serp
 - Fixed a few more exceptions with unexpected data.

@@ -12,7 +12,8 @@ import ssl
 import requests
 import shutil
 import traceback
-import asyncio
+import logging
+import inspect
 from time import sleep
 from typing import Dict
 
@@ -33,23 +34,68 @@ from playwright.sync_api import sync_playwright
 # Local file imports
 from scripts.bot_prompts import *
 from scripts.bot_commands import *
+
+current_version = "1.8.5"
+current_path = os.getcwd()
+working_folder = os.path.join(current_path, 'LordGPT_folder')
+if not os.path.exists(working_folder):
+    os.makedirs(working_folder)
 # endregion
-current_version = "1.8.3"
+
+#region DEBUG CODE ###
+
+debug_code = True
+logging.basicConfig(filename='debug.log', level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+logger.debug('Debug message')
+logger.info('Info message')
+logger.warning('Warning message')
+logger.error('Error message')
+logger.critical('Critical message')
+
+
+def log_all_functions(logger, log_vars_callback=None):
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            entry_time = time.time()
+            logger.debug('Entering function {}() at {}'.format(
+                func.__name__, entry_time))
+            logger.debug('Input arguments: {}, {}'.format(args, kwargs))
+            logger.debug('Input argument types: {}'.format(
+                {k: type(v) for k, v in zip(inspect.signature(func).parameters.keys(), args)}))
+
+            try:
+                result = func(*args, **kwargs)
+                exit_time = time.time()
+                elapsed_time = exit_time - entry_time
+
+                # Log specific variables
+                if log_vars_callback is not None:
+                    log_vars = log_vars_callback()
+                    for index, (var, value) in enumerate(log_vars.items(), start=1):
+                        logger.debug(
+                            'Variable{} ({}): {}'.format(index, var, value))
+
+                logger.debug('Function {}() executed successfully at {}'.format(
+                    func.__name__, exit_time))
+                logger.debug('Output: {}'.format(result))
+                logger.debug('Elapsed time: {} seconds'.format(elapsed_time))
+
+                return result
+            except Exception as e:
+                logger.error(
+                    'Function {}() raised an exception: {}'.format(func.__name__, e))
+                raise
+        return wrapper
+    return decorator
 
 def log_exception(exc_type, exc_value, exc_traceback):
     with open("exceptions.log", "a") as f:
         f.write("\n\n" + "=" * 80 + "\n")
         f.write(f"Exception Timestamp: {datetime.datetime.now()}\n")
         traceback.print_exception(exc_type, exc_value, exc_traceback, file=f)
-
-
 sys.excepthook = log_exception
-
-
-current_path = os.getcwd()
-working_folder = os.path.join(current_path, 'LordGPT_folder')
-if not os.path.exists(working_folder):
-    os.makedirs(working_folder)
+#endregion
 
 # region GLOBAL VARIABLES
 config_file = "config.json"
@@ -63,19 +109,6 @@ user_goal = ""
 # endregion
 
 # region GLOBAL FUNCTIONS
-def debug_log(message, value=None):
-    global current_datetime
-    if debug_code:
-        # Create the debug.txt file path
-        debug_file_path = os.path.join(working_folder, "debug.txt")
-
-        current_datetime = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-        # Write the message and value to the debug.txt file
-        # Add the encoding parameter here
-        with open(debug_file_path, "a", encoding="utf-8") as debug_file:
-            debug_file.write(f"[{current_datetime}] {message}{value}\n\n")
-
 
 def set_global_success(value):
     global success
@@ -83,6 +116,7 @@ def set_global_success(value):
 
 
 def check_for_updates():
+    
     try:
         update_response = requests.get(update_url)
         update_response.raise_for_status()
@@ -108,6 +142,7 @@ def check_for_updates():
 check_for_updates()
 
 
+@log_all_functions(logger)
 def prompt_user_for_config():
     api_key = input(
         "OPENAI API key:https://platform.openai.com/account/api-keys - Come to our discord and message Cytranic to borrow a key:  "
@@ -247,6 +282,7 @@ google_search_id = get_variable(env_data, "CUSTOM_SEARCH_ENGINE_ID", None)
 api_count = 0
 
 
+@log_all_functions(logger)
 def alternate_api(number):
     global api_count
     global model
@@ -261,25 +297,25 @@ def alternate_api(number):
             api_key = get_variable(env_data, "AZURE_API_KEY")
             model = get_variable(env_data, "AZURE_MODEL_NAME")
             api_type = "AZURE"
-            debug_log("API Alternate Type : ", api_type)
+
         else:
             api_url = get_variable(env_data, "OPENAI_URL")
             api_key = get_variable(env_data, "OPENAI_API_KEY")
             model = get_variable(env_data, "OPENAI_MODEL_NAME")
             api_type = "OPENAI"
-            debug_log("API Alternate Type : ", api_type)
+
     elif api_function == "AZURE":
         api_url = get_variable(env_data, "AZURE_URL")
         api_key = get_variable(env_data, "AZURE_API_KEY")
         model = get_variable(env_data, "AZURE_MODEL_NAME")
         api_type = "AZURE"
-        debug_log("API Static Type : ", api_type)
+
     elif api_function == "OPENAI":
         api_url = get_variable(env_data, "OPENAI_URL")
         api_key = get_variable(env_data, "OPENAI_API_KEY")
         model = get_variable(env_data, "OPENAI_MODEL_NAME")
         api_type = "OPENAI"
-        debug_log("API Static Type : ", api_type)
+
     else:
         raise ValueError(
             "Invalid API_FUNCTION value. Supported values are 'AZURE', 'OPENAI', or 'ALTERNATE'."
@@ -298,25 +334,12 @@ def typing_print(text, color=None):
     print()  # move cursor to the next line after printing the text
 
 
-def print_bot_response(reasoning, command_string, command_argument, current_task, self_prompt_action):
-    print(colored("\nLordGPT Thoughts: ", color="yellow"), end="")
-    typing_print(str(reasoning))
-    print(colored("Currently :       ", color="green"), end="")
-    typing_print(str(current_task) + "")
-    print(colored("Next Task:        ", color="blue"), end="")
-    typing_print(str(self_prompt_action) + "")
-    print(colored("Executing CMD:    ", color="red"), end="")
-    typing_print(str(command_string))
-    print(colored("CMD Argument:     ", color="red"), end="")
-    typing_print(str(command_argument) + "\n\n")
-    return
-
-
 def remove_brackets(text):
     return re.sub(r'\[|\]', '', text)
 
 
 # Create JSON message function
+@log_all_functions(logger)
 def create_json_message(
     reasoning_80_words="",
     command_string="",
@@ -331,7 +354,7 @@ def create_json_message(
         "current_task": current_task + " ",
         "self_prompt_action": self_prompt_action + " ",
     }
-    debug_log("JSON CREATE FUNCTION: ", json_message)
+
     return json.dumps(json_message)
 
 # Get random user agent function
@@ -360,6 +383,7 @@ def get_random_text_and_color(text_color_dict):
 # region ### TEXT PARSER ###
 
 
+@log_all_functions(logger)
 def extract_text(html_content):
     soup = BeautifulSoup(html_content, 'html.parser')
 
@@ -406,8 +430,9 @@ text_color_dict = {
 }
 
 
+@log_all_functions(logger, log_vars_callback=lambda: locals())
 def query_bot(messages, retries=api_retry):
-    debug_log("Messages before API: ", messages)
+
     random_text, random_color = get_random_text_and_color(text_color_dict)
     time.sleep(api_throttle)  # type: ignore
     alternate_api(api_count)
@@ -415,25 +440,28 @@ def query_bot(messages, retries=api_retry):
     with yaspin(text=random_text, color=random_color) as spinner:
         for attempt in range(retries):  # type: ignore
             try:
+                @log_all_functions(logger, log_vars_callback=lambda: locals())
+                def create_api_json(messages):
+                    #messages = json.dumps(messages)
+                    json_payload = json.dumps(
+                        {
+                            "model": model,
+                            "messages": messages,
+                            "max_tokens": max_tokens,
+                            "temperature": temperature,
+                            "top_p": top_p,
+                            "frequency_penalty": presence_penalty,
+                            "presence_penalty": presence_penalty,
+                        }
+                    )
 
-                json_payload = json.dumps(
-                    {
-                        "model": model,
-                        "messages": messages,
-                        "max_tokens": max_tokens,
-                        "temperature": temperature,
-                        "top_p": top_p,
-                        "frequency_penalty": presence_penalty,
-                        "presence_penalty": presence_penalty,
+                    headers = {
+                        "api-key": api_key,
+                        "Content-Type": "application/json",
+                        "Authorization": f"Bearer {api_key}",
                     }
-                )
-
-                debug_log("JSON Payload: ", json_payload)
-                headers = {
-                    "api-key": api_key,
-                    "Content-Type": "application/json",
-                    "Authorization": f"Bearer {api_key}",
-                }
+                    return json_payload, headers
+                json_payload, headers = create_api_json(messages)
 
                 # BD PROXY REQUEST
                 if bd_enabled:
@@ -456,7 +484,7 @@ def query_bot(messages, retries=api_retry):
                         utfresponse = uresponse.decode('utf-8')
                         botresponse = json.loads(utfresponse)
                         response_json = botresponse
-                        debug_log("Bot reply: ", botresponse)
+
 
                     except Exception as e:
                         if attempt < retries - 1:  # type: ignore
@@ -495,7 +523,7 @@ def query_bot(messages, retries=api_retry):
                                 "I will respond using the required json format and continue with the first uncompleted task"
                             )
 
-                debug_log("Bot reply: ", botresponse)
+
                 # Handling error response
                 if "error" in response_json:
                     error_message = response_json["error"]["message"]
@@ -509,21 +537,21 @@ def query_bot(messages, retries=api_retry):
                         "I will respond using the required json format and continue with the first uncompleted task"
                     )
 
-                debug_log(response_json)
+
                 responseparsed = response_json["choices"][0]["message"]["content"]
 
                 try:
                     responseformatted = json.loads(responseparsed)
-                    debug_log(f"Parsed Choices Node: {responseparsed}")
+                    
 
                 except:
                     alternate_api(api_count)
-                    debug_log(f"LordGPT Responsed with invalid json, but we will fix on our end.: {responseparsed}]")
+                    
                     print("LordGPT Responsed with invalid json, but we will fix on our end.")
                     fixed_response = create_json_message(responseparsed)       
                     responseformatted = json.loads(fixed_response)
 
-                debug_log("API Count: ", api_count)
+                
                 if responseformatted is not None:
                     if "current_task" in responseformatted:
                         reasoning = responseformatted["reasoning_80_words"]
@@ -567,75 +595,63 @@ def query_bot(messages, retries=api_retry):
 
 # region ### GENERATE PDF ###
 
-
+@log_all_functions(logger)
 def create_pdf_from_html(reasoning, command_string, command_argument, current_task, self_prompt_action):
     try:
-        # Extract content between triple backticks
-        content_match = re.search(r'```(.*?)```', command_argument, re.DOTALL)
-        if not content_match:
-            return create_json_message(
-                "Error: Couldn't find content between triple backticks",
-                command_string,
-                command_argument,
-                current_task,
-                "I need to replace the entire ```[CONTENT]``` with an actual HTML string formatted with backtiks.",
-            )
+        # Split the command_argument based on the pipe symbol
+        filename, html_file = command_argument.split('|')
+        filename = filename.strip()
+        html_file = html_file.strip()
 
-        content = content_match.group(1).strip()
-
-        # Check if content is [HTML MARKUP]
-        if content.lower() == "```[HTML MARKUP]```":
-            return create_json_message(
-                "Error: Invalid Content. You must replace ```[CONTENT]``` with the HTML string formatted with backtiks.",
-                command_string,
-                command_argument,
-                current_task,
-                "I need to replace the entire ```[CONTENT]``` with an actual HTML string formatted with backtiks.",
-            )
-
-        # Parse the input string to extract the filename and content
-        parts = command_argument.split("Content:")
-        filename_part = parts[0].strip()
-        filename = filename_part.replace("Filename:", "").strip()
-
-        # Concatenate the working_folder path with the filename
+        # Concatenate the working_folder path with the filenames
+        html_file_path = os.path.join(working_folder, html_file)
         output_path = os.path.join(working_folder, filename)
+
+        # Check if the provided html_file is an HTML file
+        if not html_file.lower().endswith('.html'):
+            return create_json_message(
+                "Error: Invalid Format. command_argument must be [FILENAME.pdf]|[HTML-TEMPLATE.html] ",
+                command_string,
+                command_argument,
+                current_task,
+                message_command_self_prompt,
+
+            )
 
         # Set up PDFKit configuration (replace the path below with the path to your installed wkhtmltopdf)
         config = pdfkit.configuration(wkhtmltopdf="/usr/bin/wkhtmltopdf")
 
-        if content.lower().endswith('.html'):
-            # If content is an HTML file, read the content of the file and pass it to pdfkit
-            html_file_path = os.path.join(working_folder, content)
-            with open(html_file_path, 'r') as f:
-                html_content = f.read()
-            pdfkit.from_string(html_content, output_path, configuration=config)
-        else:
-            # Convert the HTML content to a PDF file using PDFKit
-            pdfkit.from_string(content, output_path, configuration=config)
+        # Read the content of the HTML file and pass it to pdfkit
+        with open(html_file_path, 'r') as f:
+            html_content = f.read()
+
+        # Convert the HTML content to a PDF file using PDFKit
+        pdfkit.from_string(html_content, output_path, configuration=config)
 
         return create_json_message(
-            "PDF Created Successfully",
+            "PDF Created successfully " + filename + " ",
             command_string,
             command_argument,
             current_task,
             message_command_self_prompt,
+
         )
+
     except Exception as e:
-        debug_log(f"Error: {e}")
         return create_json_message(
-            "Error: " + str(e),
+            f"Error converting html to PDF: {str(e)} ",
             command_string,
             command_argument,
             current_task,
-            "Google Error",
+            " Check Argument Format, or research error. ",
+
         )
 
 
 # endregion
 
 # region ### SHELL COMMANDS ###
-
+@log_all_functions(logger)
 def run_shell_command(
     reasoning, command_string, command_argument, current_task, self_prompt_action
 ):
@@ -664,9 +680,11 @@ def run_shell_command(
         )
 
     return_code = process.returncode
-    debug_log(f"Return Code: {return_code}")
-
+    
     shell_response = ""
+
+    output_decoded = output.decode('utf-8', errors='replace')
+    error_decoded = error.decode('utf-8', errors='replace')
 
     if "mkdir" in command_argument:
         if return_code == 0:
@@ -674,14 +692,14 @@ def run_shell_command(
             shell_response = "Folder created successfully. " + command_argument
         elif (
             return_code == 1
-            and "Folder already exists navigate to folder. " in error.decode("utf-8", errors='replace')
+            and "Folder already exists navigate to folder. " in error_decoded
         ):
             set_global_success(True)
             shell_response = (
                 "Folder already exists. Try switching to folder. " + command_argument
             )
         else:
-            shell_response = f"Error creating folder, research the error: {error.decode('utf-8', errors='replace').strip()}"
+            shell_response = f"Error creating folder, research the error: {error_decoded.strip()}"
 
     elif "touch" in command_argument:
         if return_code == 0:
@@ -689,7 +707,7 @@ def run_shell_command(
             shell_response = "File created and saved successfully. " + command_argument
         else:
             set_global_success(False)
-            shell_response = f"Error creating file, Research the error: {error.decode('utf-8', errors='replace').strip()}"
+            shell_response = f"Error creating file, Research the error: {error_decoded.strip()}"
 
     else:
         if return_code == 0:
@@ -697,16 +715,16 @@ def run_shell_command(
             # Add slicing to limit output length
             shell_response = (
                 "Shell Command Output: "
-                + f"{output.decode('utf-8', errors='replace').strip()}"[:max_characters]
+                + f"{output_decoded.strip()}"[:max_characters]
             )
         else:
             set_global_success(False)
             # Add slicing to limit error length
-            shell_response = f"Shell Command failed, research the error: {error.decode('utf-8', errors='replace').strip()}"[
+            shell_response = f"Shell Command failed, research the error: {error_decoded.strip()}"[
                 :max_characters
             ]
 
-    debug_log("Shell response: ", shell_response)
+    print("Shell Command Output: " + shell_response)
     return create_json_message(
         "Shell Command Output: " + shell_response,
         command_string,
@@ -717,17 +735,39 @@ def run_shell_command(
     )
 
 
+
 # endregion
 
 # region ### SAVE RESEARCH ###
 
-
+@log_all_functions(logger)
 def save_research(reasoning, command_string, command_argument, current_task, self_prompt_action):
+    # Match the command_argument with the provided regex pattern
+    match = re.match(
+        r'([^|]+)\|?(?:(```[\s\S]*?```)?\|)?(.+)', command_argument)
+
+    if not match:
+        return create_json_message(
+            "Error: Invalid format: ([TITLE]|[CONTENT]) The content is required to be formatted as a multiline string enclosed within triple backticks (```).",
+            command_string,
+            command_argument,
+            current_task,
+            message_command_self_prompt,
+
+        )
+
+    # Extract the title and content from the matched groups
+    title = match.group(1).strip()
+    content = match.group(3).strip()
+
+    # Remove the triple backticks, newline characters, and extra spaces from the content
+    content = content.replace("```", "").replace("\n", "").replace("  ", "")
+
     # Get the current datetime
     current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    # Create the research entry with the datetime and content
-    research_entry = f"DateTime: {current_time}\nContent: {command_argument.strip()}\n\n"
+    # Create the research entry with the datetime, title, and content
+    research_entry = f"DateTime: {current_time}\nTitle: {title}\nContent: {content}\n\n"
 
     # Save the research to a text file
     research_file_path = os.path.join(working_folder, "research.txt")
@@ -745,17 +785,20 @@ def save_research(reasoning, command_string, command_argument, current_task, sel
         )
 
     return create_json_message(
-        "Research saved successfully",
+        "Success: Researched saved successfully",
         command_string,
-        command_argument,
+        "Success",
         current_task,
         message_command_self_prompt,
+
     )
+
 # endregion
 
 # region ### FETCH RESEARCH ###
 
 
+@log_all_functions(logger)
 def fetch_research(reasoning, command_string, command_argument, current_task, self_prompt_action):
     # Fetch the research.txt file from the working_folder
     research_file_path = os.path.join(working_folder, "research.txt")
@@ -765,7 +808,7 @@ def fetch_research(reasoning, command_string, command_argument, current_task, se
             formatted_research = f.read()
     except FileNotFoundError:
         return create_json_message(
-            "Failed to fetch research data, the file doesn't exist.",
+            "Failed to fetch research data, the file doesn't exist. You must save research before you can fetch it.",
             command_string,
             command_argument,
             current_task,
@@ -785,17 +828,18 @@ def fetch_research(reasoning, command_string, command_argument, current_task, se
 # W Writes the task list to bots 2nd message so he always remembers
 
 
+@log_all_functions(logger)
 def create_task_list(
     reasoning, command_string, command_argument, current_task, self_prompt_action
 ):
     if command_argument is not None:
         message_handler(None, command_argument, "task")
     return create_json_message(
-        "Task List Saved Successfully",
+        "Task List Updated Successfully!",
         command_string,
         command_argument,
         current_task,
-        "Double check task list to ensure its detailed enough so only one command is issued per item.",
+        self_prompt_action,
 
     )
 
@@ -803,68 +847,65 @@ def create_task_list(
 # endregion
 
 # region ### FILE OPERATION ###
+@log_all_functions(logger)
 def file_operations(reasoning, command_string, command_argument, current_task, self_prompt_action):
     try:
-        # Use regex to split the command_argument
-        match = re.match(r'([^|]+)\|(?:(```[\s\S]*?```)?)\|(.+)', command_argument)
+        match = re.match(
+            r'([^|]+)\|?(?:(```[\s\S]*?```)?\|)?(.+)', command_argument)
         if not match:
-            return create_json_message("Error: Every argument must contain this format:(filename|```content```|operation) The filename is the name of the file you want to operate on. The content needs to be formatted text or formatted code as a multiline string using triple backticks (```). For file rename and move operations, the content needs be the new name or destination path, respectively. The following file operations are valid: 'write', 'read', 'append', 'rename', 'move', 'delete'. Read files to verify.", command_string, command_argument, current_task, "Retry using a valid file_operation format and operation")
-    
-        filename, content, operation = match.groups()
-        content = content.strip("```") if content else ""   
-        file_path = os.path.join(working_folder, filename)
+            return create_json_message("Error: Invalid format:([FILENAME.ext]|[CONTENT]|[FILEOPERATION]) The content is required to be formatted as a multiline string enclosed within triple backticks (```).", command_string, command_argument, current_task, "Retry using a valid file_operation format and operation")
+
+        file_name, content, operation = match.groups()
+
+        if operation != "read" and (not content or not content.startswith('```') or not content.endswith('```')):
+            return create_json_message("Error: The content is required to be formatted as a multiline string enclosed within triple backticks (```).", command_string, command_argument, current_task, "Retry using triple backticks for content")
+
+        content = content.strip("```") if content else None
+        file_path = os.path.join(working_folder, file_name)
         operation_result = ""
 
         try:
             if operation == "write":
                 with open(file_path, "w") as file:
                     file.write(content)
-                operation_result = "File Written Successfully! "
+                operation_result = "File Written Successfully!"
             elif operation == "read":
                 with open(file_path, "r") as file:
-                    read_content = file.read()
-                operation_result = read_content
+                    operation_result_raw = file.read()
+                    operation_result = json.dumps(operation_result)
             elif operation == "append":
                 with open(file_path, "a") as file:
                     file.write(content)
-                operation_result = "File Content appended successfully! "
+                operation_result = "File Content appended successfully!"
             elif operation == "rename":
                 new_name = content.strip()
                 new_path = os.path.join(working_folder, new_name)
                 os.rename(file_path, new_path)
-                operation_result = "File Renamed: " + new_name + " "
+                operation_result = "File Renamed: " + new_name
             elif operation == "move":
-                destination_path = content.strip()
                 destination_path = os.path.join(
-                    working_folder, destination_path)
+                    working_folder, content.strip())
                 shutil.move(file_path, destination_path)
-                operation_result = "File Moved: " + destination_path + " "
+                operation_result = "File Moved: " + destination_path
             elif operation == "delete":
                 os.remove(file_path)
-                operation_result = "File Deleted: " + file_path + " "
+                operation_result = "File Deleted: " + file_path
             else:
-                return create_json_message("Invalid file operation: Every argument must contain this format:(filename|```content```|operation) The filename is the name of the file you want to operate on. The content needs to be formatted text or formatted code as a multiline string using triple backticks (```). For file rename and move operations, the content needs be the new name or destination path, respectively. The following file operations are valid: 'write', 'read', 'append', 'rename', 'move', 'delete'. Read files to verify. ", command_string, command_argument, current_task, " Retry using a valid file_operation format and operation ")
-        except FileNotFoundError:
-            debug_log("File Operation Error : Folder does not exist" + command_string + command_argument +
-                      current_task + self_prompt_action)
+                return create_json_message("Invalid file operation. The following file operations are valid: 'write', 'read', 'append', 'rename', 'move', 'delete'.", command_string, command_argument, current_task, " Retry using a valid file_operation format and operation")
+        except FileNotFoundError:            
             return create_json_message("Error: Folder does not exist. Please make sure the folder exists before performing file operations.", command_string, command_argument, current_task, "Retry with an existing folder")
 
-        operation_cleaned = json.dumps(operation_result)
-        debug_log("File Operation : " + operation_cleaned + command_string + command_argument +
-                  current_task + "Complete: Regenerate task list with item completed and add the filename to the tasklist.")
-        return create_json_message(operation_cleaned, command_string, command_argument, current_task, "If success, Regenerate task list and mark task " + current_task + " completed with the filename included in the task.")
+        operation_cleaned = json.dumps(operation_result)        
+        return create_json_message(operation_cleaned, command_string, command_argument, current_task, message_command_self_prompt + "Ensure you add the filename to the task list")
     except ValueError:
-        debug_log("File Operation Error : " + reasoning + command_string + command_argument +
-                  current_task + self_prompt_action)
-        return create_json_message("Error: Every argument must contain this format:(filename|```content```|operation) The filename is the name of the file you want to operate on. The content needs to be formatted text or formatted code as a multiline string using triple backticks (```). For file rename and move operations, the content needs be the new name or destination path, respectively. The following file operations are valid: 'write', 'read', 'append', 'rename', 'move', 'delete'. Read files to verify. ", command_string, command_argument, current_task, " Retry using a valid file_operation format and operation ")
-
+        return create_json_message("Error: Every argument must contain this format: (filename |```content```| operation) The filename is the name of the file you want to operate on. The content needs to be formatted text or formatted code asa multiline string using triple backticks (```). For file rename and move operations, the content needs be the new name or destination path, respectively. The following file operations are valid: 'write', 'read', 'append', 'rename', 'move', 'delete'. Read files to verify.", command_string, command_argument, current_task, " Retry using a valid file_operation format and operation")
 # endregion
 
 # region ### SEARCH ENGINE ###
-
-
 # GOOGLE API
+
 if search_engine_mode == "GOOGLE":
+    @log_all_functions(logger)
     def search_engine(
         reasoning, command_string, command_argument, current_task, self_prompt_action
     ):
@@ -905,7 +946,7 @@ if search_engine_mode == "GOOGLE":
             searchresults = json.dumps(
                 formatted_results.replace('\n', '').replace('\\n', ''))
 
-            debug_log("Google Search: ", searchresults)
+            
             set_global_success(True)
             # GOOGLE IMAGE RESULTS RETURNED
             return create_json_message(
@@ -916,7 +957,7 @@ if search_engine_mode == "GOOGLE":
                 message_command_self_prompt
             )
         except Exception as e:
-            debug_log(f"Error: {str(e)}")
+            
             set_global_success(False)
             return create_json_message(
                 "No Search Results Returned" + f"Error: {str(e)}",
@@ -928,7 +969,7 @@ if search_engine_mode == "GOOGLE":
 
 # SERP API
 elif search_engine_mode == "SERP":
-
+    @log_all_functions(logger)
     def search_engine(reasoning, command_string, command_argument, current_task, self_prompt_action):
         params = {
             "api_key": serp_api_key,
@@ -953,7 +994,7 @@ elif search_engine_mode == "SERP":
                     {"index": index, "title": title, "link": link})
 
         if not formatted_results:
-            debug_log("SERP Error: ", formatted_results)
+            
             return create_json_message(
                 "Error: Search Error, try another search term.",
                 command_string,
@@ -963,7 +1004,7 @@ elif search_engine_mode == "SERP":
             )
 
         sanitized_results = json.dumps(formatted_results)
-        debug_log("SERP Sanitized: ", sanitized_results)
+        
         return create_json_message(
             "Search Results: " + sanitized_results,
             command_string,
@@ -976,8 +1017,9 @@ elif search_engine_mode == "SERP":
 # endregion
 
 # region ### BROWSE WEBSITE ###
-
+@log_all_functions(logger)
 def browse_website_url(reasoning, command_string, command_argument, current_task, self_prompt_action):
+    @log_all_functions(logger)
     def run(playwright):
         browser = playwright.chromium.launch()
         context = browser.new_context(java_script_enabled=False)
@@ -985,7 +1027,7 @@ def browse_website_url(reasoning, command_string, command_argument, current_task
 
         page.goto(command_argument)
         html_content = page.content()
-        debug_log(html_content)
+        
         browser.close()
         return html_content
 
@@ -1013,7 +1055,7 @@ def browse_website_url(reasoning, command_string, command_argument, current_task
     if max_characters is not None and len(extracted_text) > max_characters:
         sanitized_text = extracted_text[:max_characters]
 
-        debug_log("Browse URL Sanitized Text: ", sanitized_text)
+        
 
     return create_json_message(
         "Website Content: " + sanitized_text,  # type: ignore
@@ -1027,7 +1069,7 @@ def browse_website_url(reasoning, command_string, command_argument, current_task
 # endregion
 
 # region ### MISSION ACCOMPLISHED ###
-
+@log_all_functions(logger)
 def mission_accomplished(
     reasoning, command_string, command_argument, current_task, self_prompt_action
 ):
@@ -1041,9 +1083,9 @@ def mission_accomplished(
 
 # region ### MESSAGE HANDLER ###
 
-
+@log_all_functions(logger)
 def message_handler(current_prompt, message, role):
-
+    @log_all_functions(logger)
     def update_message_history(role, content):
         try:
             message_history.append({"role": role, "content": content})
@@ -1058,6 +1100,7 @@ def message_handler(current_prompt, message, role):
                 f"Error occurred while appending message: Check logs, message set to None {e}"
             )
 
+    @log_all_functions(logger)
     def limit_message_history():
         while len(message_history) > max_conversation + 1:  # type: ignore
             message_history.pop(2)
@@ -1085,24 +1128,20 @@ def message_handler(current_prompt, message, role):
 
 # region ### COMMAND HANDLER ###
 
-
+@log_all_functions(logger)
 def command_handler(
     reasoning, command_string, command_argument, current_task, self_prompt_action
 ):
-    debug_log("Command Handler: ", reasoning + command_string + command_argument + current_task + self_prompt_action)
+    
     if not command_string.strip():
         return create_json_message(
         reasoning, command_string, command_argument, current_task, self_prompt_action
     )
 
     function = globals().get(command_string)
-    debug_log("Debug Function: ", function)
+    
     if function is None:
-        debug_log(
-            "LordGPT Send an invalid command_string : "
-            + command_string
-            + " is not a valid command_string."
-        )
+
         return create_json_message("The command_string " + command_string + " is not a valid command string.", command_string, command_argument, current_task, "Double check the command string and respond in the required json format.")
     return function(
         reasoning, command_string, command_argument, current_task, self_prompt_action
@@ -1147,6 +1186,7 @@ def bbs_ascii_lordgpt():
 # endregion
 
 
+@log_all_functions(logger)
 def openai_bot_handler(current_prompt, message, role):
 
     messages = message_handler(current_prompt, message, role)
@@ -1163,12 +1203,11 @@ def openai_bot_handler(current_prompt, message, role):
     typing_print(str(command_string))
     print(colored("CMD Argument:     ", color="red"), end="")
     typing_print(str(command_argument) + "\n\n")
-    handler_response = command_handler(
-        reasoning, command_string, command_argument, current_task, self_prompt_action
-    )
+    
+    
+    handler_response = command_handler(reasoning, command_string, command_argument, current_task, self_prompt_action)
 
     if success == True:
-
         return handler_response
     return handler_response
 
@@ -1177,16 +1216,36 @@ def openai_bot_handler(current_prompt, message, role):
 
 # region ### MAIN ###
 
-
+@log_all_functions(logger)
 def main_loop():
+    alternate_api(api_count)
+    
+    #Clear Log files and old research
     research_file = os.path.join(working_folder, "research.txt")
     debug_file = os.path.join(working_folder, "debug.txt")
-
+    exceptions_file = os.path.join(working_folder, "exceptions.log")
+    debug_log_file = os.path.join(working_folder, "debug.log")
+    
     if os.path.exists(research_file):
         os.remove(research_file)
-
+    
     if os.path.exists(debug_file):
         os.remove(debug_file)
+    
+    if os.path.exists(exceptions_file):
+        os.remove(exceptions_file)
+    
+    if os.path.exists(debug_log_file):
+        os.remove(debug_log_file) 
+
+    
+    #Set the prompt based on the model.
+    if model == "gpt-4" or model == "gpt4":
+        bot_prompt = bot_prompt_gpt4
+        message_initial = message_initial_gpt4
+    else:
+        bot_prompt = bot_prompt_gpt3
+        message_initial = message_initial_gpt3
 
     print(colored("Tips: ", "green"))
 
@@ -1200,14 +1259,14 @@ def main_loop():
     )
 
     user_goal = input("Goal: ")
-    print(colored("Creating detailed plan to achive the goal....", "green"))
+    print(colored("Creating detailed plan to achieve the goal....", "green"))
     if not user_goal:
-        user_goal = "Determine my location, gather the 5-day forecast for my location from the weather.gov website, and generate a professional-looking PDF with the 5-day forecast."
+        user_goal = "Determine my city and state, then gather and save the 5-day forecast for my location from the weather.gov website, finally generate a professional-looking PDF with the 5-day forecast."
         print(colored("Goal: " + user_goal, "green"))
     set_global_success(True)
     alternate_api(api_count)
     bot_send = openai_bot_handler(
-        bot_prompt + user_goal, message_initial_gpt4, "assistant")
+        bot_prompt + user_goal, message_initial, "assistant")
 
     while True:
         num_input = input(
@@ -1230,7 +1289,7 @@ def main_loop():
         if continue_choice == "n":
             new_direction = input("Correct LordGPT: ")
             openai_bot_handler(
-                bot_prompt, f"""{{"reasoning_80_words": "{new_direction}", "command_string": "[COMMAND]", "command_argument": "[ARGUMENT]", "current_task": "[CURRENT TASK]", "self_prompt_action": "Regenerate a new task list based on the direction given"}}""", "user")
+                bot_prompt, f"""{new_direction}""", "user")
             break
 
 

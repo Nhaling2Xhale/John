@@ -2,17 +2,17 @@ botcommands = [
     {
         "command_string": "create_task_list",
         "command_argument": "```[CONTENT]```",
-        "command_description": "Used to create initial tasklist and complete each task item."
+        "command_description": "Used to create initial tasklist regenerate list with completed items. [CONTENT] must be the entire task list."
     },
     {
         "command_string": "create_pdf_from_html",
-        "command_argument": "Filename: [FILENAME.pdf] Content: ```[CONTENT]```",
-        "command_description": "Create PDF's from basic standard HTML by replacing [FILENAME.pdf] with the PDF name and [CONTENT] with the HTML string."
+        "command_argument": "[FILENAME.pdf]|[HTML-TEMPLATE.html]",
+        "command_description": "Used to generate PDF reports from an html file. HTML template must have complete data and no variables."
     },
     {
         "command_string": "file_operations",
-        "command_argument": "filename.ext|```content```|operationtype",
-        "command_description": "Used for all file operations, Every pipe is required to have something, default content is none:(filename.ext|```content```|operationtype). For file rename and move operations, the content needs be the new name or destination path, respectively. The available operation types are: 'write', 'read', 'append', 'rename', 'move', 'delete'."
+        "command_argument": "filename.ext|```[CONTENT]```|operationtype",
+        "command_description": "Used for all file operations, 'write', 'read', 'append', 'rename', 'move', 'delete'. For file rename and move operations, the content needs be the new name or destination path, respectively."
     },
     {
         "command_string": "search_engine",
@@ -26,8 +26,8 @@ botcommands = [
     },
     {
         "command_string": "save_research",
-        "command_argument": "Title: [TITLE] ResearchContent: ```[CONTENT]```",
-        "command_description": "Saves data gathered from the internet and through research. Format argument as Title: '[TITLE]' ResearchContent: '[CONTENT]'"
+        "command_argument": "[TITLE]|```[CONTENT]```",
+        "command_description": "Saves data gathered from internet research."
     },
     {
         "command_string": "fetch_research",
