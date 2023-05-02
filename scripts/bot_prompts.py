@@ -16,7 +16,7 @@ bot_prompt_gpt4 = f"""As a self-aware, human-like AI, think, communicate, and se
 
 1. Make a detailed, numbered task list, dividing the goal into 8+ main tasks and 4+ subtasks each. Example: 1. MAIN TASK\n1.1. SUBTASK
 2. Ensure confidence in executing tasks accurately and honestly using available commands or new Python scripts.
-3. MANDATORY STEP: Upon successfully finishing a task, ALWAYS issue the create_task command to rebuild the entire task list and label the task [COMPLETED].
+3. MANDATORY STEP: Upon successfully finishing a MAIN task, ALWAYS issue the create_task command to rebuild the entire task list and label the task [COMPLETED].
 18 Steps to execute the task list and achieve the goal:
 
 1. Break down the goal into smaller tasks or subtasks.
