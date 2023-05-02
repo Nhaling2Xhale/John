@@ -790,9 +790,9 @@ def save_research(reasoning, command_string, command_argument, current_task, sel
 
     # Save the research to a text file
     research_file_path = os.path.join(working_folder, "research.txt")
-
+    
     try:
-        with open(research_file_path, "a") as f:
+        with open(research_file_path, "a", encoding="utf-8") as f:  # Add encoding="utf-8"
             f.write(research_entry)
     except FileNotFoundError:
         return create_json_message(
@@ -809,8 +809,9 @@ def save_research(reasoning, command_string, command_argument, current_task, sel
         command_argument,
         current_task,
         message_command_self_prompt,
-
+    
     )
+    
 
 # endregion
 
