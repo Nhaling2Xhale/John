@@ -106,6 +106,8 @@ message_history = []
 global api_type
 current_task = ""
 user_goal = ""
+self_prompt_action = ""
+message_command_self_prompt = ""
 # endregion
 
 # region GLOBAL FUNCTIONS
@@ -609,8 +611,9 @@ def create_pdf_from_html(reasoning, command_string, command_argument, current_ta
 
         # Check if the provided html_file is an HTML file
         if not html_file.lower().endswith('.html'):
+            response = "Error: Invalid Format. command_argument must be [FILENAME.pdf]|[HTML-TEMPLATE.html] "
             return create_json_message(
-                "Error: Invalid Format. command_argument must be [FILENAME.pdf]|[HTML-TEMPLATE.html] ",
+                response,
                 command_string,
                 command_argument,
                 current_task,
@@ -627,23 +630,24 @@ def create_pdf_from_html(reasoning, command_string, command_argument, current_ta
 
         # Convert the HTML content to a PDF file using PDFKit
         pdfkit.from_string(html_content, output_path, configuration=config)
-
+        reasoning = "PDF Created successfully "
         return create_json_message(
-            "PDF Created successfully " + filename + " ",
+            reasoning + filename,
             command_string,
             command_argument,
             current_task,
             message_command_self_prompt,
 
         )
-
+    
     except Exception as e:
+        reasoning = f"Error converting html to PDF: {str(e)} "
         return create_json_message(
-            f"Error converting html to PDF: {str(e)} ",
+            reasoning,
             command_string,
             command_argument,
             current_task,
-            " Check Argument Format, or research error. ",
+            self_prompt_action,
 
         )
 
@@ -665,16 +669,18 @@ def run_shell_command(
 
     try:
         # Set a timeout value (in seconds) for the command execution
+        print("Attempting Shell Command, Timeout is 10 Minutes...")
         timeout_value = 120
         output, error = process.communicate(timeout=timeout_value)
     except subprocess.TimeoutExpired:
         process.kill()
         set_global_success(False)
+        reasoning = "Shell command execution timed out. "
         return create_json_message(
-            "Command execution timed out.",
+            reasoning,
             command_string,
             command_argument,
-            "The command could have suceeded, I will test",
+            current_task,
             message_command_self_prompt,
 
         )
@@ -726,10 +732,11 @@ def run_shell_command(
 
     print("Shell Command Output: " + shell_response)
     shell_cleaned = json.dumps(shell_response)
+    reasoning = "Check the output to determine success"
     return create_json_message(
-        "Shell Command Executed.",
+        reasoning,
         command_string,
-        "Shell Command Output: " + shell_cleaned,
+        shell_cleaned,
         current_task,
         message_command_self_prompt,
 
@@ -745,13 +752,15 @@ def run_shell_command(
 def save_research(reasoning, command_string, command_argument, current_task, self_prompt_action):
     # Match the command_argument with the provided regex pattern
     match = re.match(
-        r'([^|]+)\|?(?:(```[\s\S]*?```)?\|)?(.+)', command_argument)
+        r'([^|]+)\|(```[\s\S]*?```)', command_argument)
 
+    # Check if triple backticks are not detected in the second position
     if not match:
+        reasoning = "Error: Invalid format: ([TITLE]|[CONTENT]) The content is required to be formatted as a multiline string enclosed within triple backticks (```)."
         return create_json_message(
-            "Error: Invalid format: ([TITLE]|[CONTENT]) The content is required to be formatted as a multiline string enclosed within triple backticks (```).",
+            reasoning,
             command_string,
-            "Invalid Argument",
+            command_argument,
             current_task,
             message_command_self_prompt,
 
@@ -759,7 +768,7 @@ def save_research(reasoning, command_string, command_argument, current_task, sel
 
     # Extract the title and content from the matched groups
     title = match.group(1).strip()
-    content = match.group(3).strip()
+    content = match.group(2).strip()
 
     # Remove the triple backticks, newline characters, and extra spaces from the content
     content = content.replace("```", "")
@@ -784,11 +793,11 @@ def save_research(reasoning, command_string, command_argument, current_task, sel
             current_task,
             message_command_self_prompt,
         )
-
+    reasoning = "Success: Researched saved successfully"
     return create_json_message(
-        "Success: Researched saved successfully",
+        reasoning,
         command_string,
-        "Success: Researched saved successfully",
+        command_argument,
         current_task,
         message_command_self_prompt,
 
@@ -808,18 +817,19 @@ def fetch_research(reasoning, command_string, command_argument, current_task, se
         with open(research_file_path, "r") as f:
             formatted_research = f.read()
     except FileNotFoundError:
+        reasoning = "Failed to fetch research data, the file doesn't exist. You must save research before you can fetch it."
         return create_json_message(
-            "Failed to fetch research data, the file doesn't exist. You must save research before you can fetch it.",
+            reasoning,
             command_string,
             command_argument,
             current_task,
             message_command_self_prompt,
         )
-    research_data = json.dumps(formatted_research)
+    
     return create_json_message(
         reasoning,
         command_string,
-        research_data,
+        formatted_research,
         current_task,
         message_command_self_prompt,
     )
@@ -854,12 +864,12 @@ def file_operations(reasoning, command_string, command_argument, current_task, s
         match = re.match(
             r'([^|]+)\|?(?:(```[\s\S]*?```)?\|)?(.+)', command_argument)
         if not match:
-            return create_json_message("Error: Invalid format:([FILENAME.ext]|[CONTENT]|[FILEOPERATION]) The content is required to be formatted as a multiline string enclosed within triple backticks (```).", command_string, command_argument, current_task, "Retry using a valid file_operation format and operation")
+            return create_json_message("Error: Invalid format:([FILENAME.ext]|[CONTENT]|[FILEOPERATION]) The content is required to be formatted as a multiline string enclosed within triple backticks (```).", command_string, command_argument, current_task, message_command_self_prompt)
 
         file_name, content, operation = match.groups()
 
         if operation != "read" and (not content or not content.startswith('```') or not content.endswith('```')):
-            return create_json_message("Error: The content is required to be formatted as a multiline string enclosed within triple backticks (```).", command_string, command_argument, current_task, "Retry using triple backticks for content")
+            return create_json_message("Error: The content is required to be formatted as a multiline string enclosed within triple backticks (```).", command_string, command_argument, current_task, message_command_self_prompt)
 
         content = content.strip("```") if content else None
         file_path = os.path.join(working_folder, file_name)
@@ -873,7 +883,7 @@ def file_operations(reasoning, command_string, command_argument, current_task, s
             elif operation == "read":
                 with open(file_path, "r") as file:
                     operation_result_raw = file.read()
-                    operation_result = json.dumps(operation_result)
+                    operation_result = json.dumps(operation_result_raw)
             elif operation == "append":
                 with open(file_path, "a") as file:
                     file.write(content)
@@ -892,14 +902,17 @@ def file_operations(reasoning, command_string, command_argument, current_task, s
                 os.remove(file_path)
                 operation_result = "File Deleted: " + file_path
             else:
-                return create_json_message("Invalid file operation. The following file operations are valid: 'write', 'read', 'append', 'rename', 'move', 'delete'.", command_string, command_argument, current_task, " Retry using a valid file_operation format and operation")
-        except FileNotFoundError:            
-            return create_json_message("Error: Folder does not exist. Please make sure the folder exists before performing file operations.", command_string, command_argument, current_task, "Retry with an existing folder")
+                reasoning = "Invalid file operation. The following file operations are valid: write, read, append, rename, move, delete."
+                return create_json_message(reasoning, command_string, command_argument, current_task, message_command_self_prompt)
+        except FileNotFoundError:
+            reasoning = "Error: Folder does not exist. Please make sure the folder exists before performing file operations."
+            return create_json_message(reasoning, command_string, command_argument, current_task, message_command_self_prompt)
 
-        operation_cleaned = json.dumps(operation_result)        
-        return create_json_message(operation_cleaned, command_string, command_argument, current_task, message_command_self_prompt)
+        
+        return create_json_message(operation_result, command_string, command_argument, current_task, message_command_self_prompt)
     except ValueError:
-        return create_json_message("Error: Every argument must contain this format: (filename |```content```| operation) The filename is the name of the file you want to operate on. The content needs to be formatted text or formatted code asa multiline string using triple backticks (```). For file rename and move operations, the content needs be the new name or destination path, respectively. The following file operations are valid: 'write', 'read', 'append', 'rename', 'move', 'delete'. Read files to verify.", command_string, command_argument, current_task, " Retry using a valid file_operation format and operation")
+        reasoning = "Error: Every argument must contain this format: (filename |```content```| operation) The filename is the name of the file you want to operate on. The content needs to be formatted text or formatted code asa multiline string using triple backticks (```). For file rename and move operations, the content needs be the new name or destination path, respectively. The following file operations are valid: write, read, append, rename, move, delete. Read files to verify. "
+        return create_json_message(reasoning, command_string, command_argument, current_task, message_command_self_prompt)
 # endregion
 
 # region ### SEARCH ENGINE ###
@@ -930,12 +943,13 @@ if search_engine_mode == "GOOGLE":
                         {"title": item["title"], "link": item["link"]})
             else:
                 set_global_success(False)
+                reasoning = "No Search Results Returned"
                 return create_json_message(
-                    "No Search Results Returned",
+                    reasoning,
                     command_string,
                     command_argument,
                     current_task,
-                    "I will choose another search term",
+                    message_command_self_prompt,
                 )
 
             formatted_results = ""
@@ -950,8 +964,9 @@ if search_engine_mode == "GOOGLE":
             
             set_global_success(True)
             # GOOGLE IMAGE RESULTS RETURNED
+            reasoning = "Search Results: "
             return create_json_message(
-                "Search Results: " + searchresults,  # type: ignore
+                reasoning + searchresults,  # type: ignore
                 command_string,
                 command_argument,
                 current_task,
@@ -960,12 +975,13 @@ if search_engine_mode == "GOOGLE":
         except Exception as e:
             
             set_global_success(False)
+            reasoning = f"Error: {str(e)}"
             return create_json_message(
-                "No Search Results Returned" + f"Error: {str(e)}",
+                reasoning,
                 command_string,
                 command_argument,
                 current_task,
-                "I will double check my arguments or move to next task.",
+                message_command_self_prompt,
             )
 
 # SERP API
@@ -995,9 +1011,9 @@ elif search_engine_mode == "SERP":
                     {"index": index, "title": title, "link": link})
 
         if not formatted_results:
-            
+            reasoning = "No Search Results Returned"
             return create_json_message(
-                "Error: Search Error, try another search term.",
+                reasoning,
                 command_string,
                 command_argument,
                 current_task,
@@ -1005,9 +1021,9 @@ elif search_engine_mode == "SERP":
             )
 
         sanitized_results = json.dumps(formatted_results)
-        
+        reasoning = "Search Results: "
         return create_json_message(
-            "Search Results: " + sanitized_results,
+            reasoning + sanitized_results,
             command_string,
             command_argument,
             current_task,
@@ -1036,8 +1052,9 @@ def browse_website_url(reasoning, command_string, command_argument, current_task
         with sync_playwright() as playwright:
             result = run(playwright)
     except Exception as e:
+        reasoning = f"Error: {str(e)}"
         return create_json_message(
-            f"Error: {str(e)}",
+            reasoning,
             command_string,
             command_argument,
             current_task,
@@ -1056,10 +1073,9 @@ def browse_website_url(reasoning, command_string, command_argument, current_task
     if max_characters is not None and len(extracted_text) > max_characters:
         sanitized_text = extracted_text[:max_characters]
 
-        
-
+    reasoning = "Website Content: "
     return create_json_message(
-        "Website Content: " + sanitized_text,  # type: ignore
+        reasoning + sanitized_text,  # type: ignore
         command_string,
         command_argument,
         current_task,
@@ -1142,8 +1158,8 @@ def command_handler(
     function = globals().get(command_string)
     
     if function is None:
-
-        return create_json_message("The command_string " + command_string + " is not a valid command string.", command_string, command_argument, current_task, "Double check the command string and respond in the required json format.")
+        reasoning = "The command_string is not valid: "
+        return create_json_message(reasoning + command_string, command_string, command_argument, current_task, message_command_self_prompt)
     return function(
         reasoning, command_string, command_argument, current_task, message_command_self_prompt
     )
@@ -1198,7 +1214,7 @@ def openai_bot_handler(current_prompt, message, role):
     typing_print(str(reasoning))
     print(colored("Currently :       ", color="green"), end="")
     typing_print(str(current_task) + "")
-    print(colored("Next Task:        ", color="blue"), end="")
+    print(colored("Next Action:        ", color="blue"), end="")
     typing_print(str(self_prompt_action) + "")
     print(colored("Executing CMD:    ", color="red"), end="")
     typing_print(str(command_string))
@@ -1217,9 +1233,23 @@ def openai_bot_handler(current_prompt, message, role):
 
 # region ### MAIN ###
 
+# Set the prompt based on the model.
+
+
 @log_all_functions(logger)
 def main_loop():
     alternate_api(api_count)
+    
+    if model == "gpt-4" or model == "gpt4":
+        bot_prompt = bot_prompt_gpt4
+        message_initial = message_initial_gpt4
+        self_prompt_action = message_command_self_prompt_gpt4
+
+
+    else:
+        bot_prompt = bot_prompt_gpt3
+        message_initial = message_initial_gpt3
+        self_prompt_action = message_command_self_prompt_gpt3
     
     #Clear Log files and old research
     research_file = os.path.join(working_folder, "research.txt")
@@ -1239,20 +1269,11 @@ def main_loop():
     if os.path.exists(debug_log_file):
         os.remove(debug_log_file) 
 
-    
-    #Set the prompt based on the model.
-    if model == "gpt-4" or model == "gpt4":
-        bot_prompt = bot_prompt_gpt4
-        message_initial = message_initial_gpt4
-    else:
-        bot_prompt = bot_prompt_gpt3
-        message_initial = message_initial_gpt3
-
     print(colored("Tips: ", "green"))
 
     print(
         colored(
-            "1. GPT-4 Works the best. GPT-3.5 has issues with hallucinations, but it does work most of the time." +
+            "1. GPT4 Works the best. Thank Fluxism for GPT-3.5 fixes, performing almost on par with GPT4" +
             "\n2. Example Goal: Determine my location, gather the 5-day forecast for my location from the weather.gov website, and generate a professional-looking PDF with the 5-day forecast." +
             "\n3. Report Issues: https://github.com/Cytranics/LordGPT/issues"
             "\n4. Discord: https://discord.gg/2jT32cM8", "yellow",

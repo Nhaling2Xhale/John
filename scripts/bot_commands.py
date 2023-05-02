@@ -7,12 +7,12 @@ botcommands = [
     {
         "command_string": "create_pdf_from_html",
         "command_argument": "[FILENAME.pdf]|[HTML-TEMPLATE.html]",
-        "command_description": "Used to generate PDF reports from an html file. HTML template must have complete data and no variables."
+        "command_description": "Used to generate and create PDF from a .html file."
     },
     {
         "command_string": "file_operations",
         "command_argument": "[FILENAME.ext]|```[CONTENT]```|[OPERATION]",
-        "command_description": "Used for the following file operations, 'write', 'read', 'append', 'rename', 'move', 'delete'. For file rename and move operations, the [CONTENT] needs be the new name or destination path, respectively."
+        "command_description": "Used for the following file operations, write, read, append, rename, move, delete. For file rename and move operations, the [CONTENT] needs be the new name or destination path, respectively."
     },
     {
         "command_string": "search_engine",
@@ -32,7 +32,7 @@ botcommands = [
     {
         "command_string": "fetch_research",
         "command_argument": "",
-        "command_description": "Fetch all research data to use in PDF report."
+        "command_description": "Fetchs research data to use in PDF report."
     },
     {
         "command_string": "run_shell_command",
