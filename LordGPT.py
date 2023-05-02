@@ -37,7 +37,7 @@ from prompt_toolkit import PromptSession
 from scripts.bot_prompts import *
 from scripts.bot_commands import *
 
-current_version = "1.9.7"
+current_version = "1.9.8"
 current_path = os.getcwd()
 working_folder = os.path.join(current_path, "LordGPT_folder")
 if not os.path.exists(working_folder):
@@ -138,12 +138,13 @@ def set_global_success(value):
 
 
 def check_for_updates():
+    print(f"Version: {current_version}")
     try:
         update_response = requests.get(update_url)
         update_response.raise_for_status()
         latest_version = update_response.text.strip()
 
-        if latest_version != current_version:
+        if latest_version > current_version:
             typing_print(
                 colored(
                     f"A new version ({latest_version}) is available! Please visit {download_link} to download the update. Github: https://github.com/Cytranics/LordGPT",
@@ -369,11 +370,11 @@ def create_json_message(
     self_prompt_action="",
 ):
     json_message = {
-        'reasoning_80_words': reasoning_80_words,
-        'command_string': command_string,
-        'command_argument': command_argument,
-        'current_task': current_task,
-        'self_prompt_action': self_prompt_action,
+        "reasoning_80_words": reasoning_80_words,
+        "command_string": command_string,
+        "command_argument": command_argument,
+        "current_task": current_task,
+        "self_prompt_action": self_prompt_action,
     }
 
     return json.dumps(json_message)
@@ -560,7 +561,7 @@ def query_bot(messages, retries=api_retry):
                 responseparsed = response_json["choices"][0]["message"]["content"]
 
                 try:
-                     responseformatted = json.loads(responseparsed)
+                    responseformatted = json.loads(responseparsed)
 
                 except:
                     alternate_api(api_count)
@@ -615,13 +616,9 @@ def query_bot(messages, retries=api_retry):
 # region ### COMMANDS ###
 
 
-import re
-
-import re
-
 def clean_data(content: str) -> str:
     """
-    Clean up a string by replacing newline characters with spaces, 
+    Clean up a string by replacing newline characters with spaces,
     removing quotes, and removing Unicode escape sequences.
 
     Args:
@@ -648,8 +645,6 @@ def clean_data(content: str) -> str:
     data_str = re.sub(r"(\\\\u[0-9a-fA-F]{4})", " ", data_str)
 
     return data_str
-
-
 
 
 # region ### GENERATE PDF ###
@@ -1155,12 +1150,13 @@ def browse_website_url(reasoning, command_string, command_argument, current_task
         )
     reasoning = "Error: Website down or no results, choose a different URL"
     return create_json_message(
-            reasoning,
-            command_string,
-            command_argument,
-            current_task,
-            self_prompt_action,
-        )
+        reasoning,
+        command_string,
+        command_argument,
+        current_task,
+        self_prompt_action,
+    )
+
 
 # endregion
 
@@ -1381,10 +1377,13 @@ def main_loop():
             bot_send = openai_bot_handler(bot_prompt + user_goal, json_string, "assistant")
     if user_goal == None or cycle_choice == "n":
         # Get new goal
-        new_goal = session.prompt("Enter a new goal (or type 'quit' to exit): ") or "Determine my location, gather the 5-day forecast for my location from the weather.gov website, and generate a professional-looking PDF with the 5-day forecast."
+        new_goal = (
+            session.prompt("Enter a new goal (or type 'quit' to exit): ")
+            or "Determine my location, gather the 5-day forecast for my location from the weather.gov website, and generate a professional-looking PDF with the 5-day forecast."
+        )
         if new_goal.lower() == "quit":
             exit
-            
+
         save_goal(new_goal)
         user_goal = new_goal
 
