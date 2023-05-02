@@ -562,14 +562,15 @@ def query_bot(messages, retries=api_retry):
                         command_argument = responseformatted["command_argument"]
                         current_task = responseformatted["current_task"]
                         self_prompt_action = responseformatted["self_prompt_action"]
+                        
                         if model == "gpt-4" or model == "gpt4":                        
                           
-                            message_command_self_prompt = message_command_self_prompt_gpt4
-
+                            message_command_self_prompt = self_prompt_action + message_command_self_prompt_gpt4
+                            print(message_command_self_prompt)
                         else:                       
                   
-                            message_command_self_prompt = message_command_self_prompt_gpt3
-                            
+                            message_command_self_prompt = self_prompt_action
+  
                         return (
                             reasoning,
                             command_string,
