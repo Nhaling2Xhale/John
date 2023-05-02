@@ -12,7 +12,7 @@ botcommands = [
     {
         "command_string": "file_operations",
         "command_argument": "[FILENAME.ext]|```[CONTENT]```|[OPERATION]",
-        "command_description": "Used for the following file operations, write, read, append, rename, move, delete. For file rename and move operations, the [CONTENT] needs be the new name or destination path, respectively."
+        "command_description": "Used for the following file operations, write, read, append, move, delete. For file rename and move operations, the [CONTENT] needs be the new name or destination path, respectively."
     },
     {
         "command_string": "search_engine",
