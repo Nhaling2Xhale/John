@@ -35,7 +35,7 @@ from playwright.sync_api import sync_playwright
 from scripts.bot_prompts import *
 from scripts.bot_commands import *
 
-current_version = "1.8.7"
+current_version = "1.9"
 current_path = os.getcwd()
 working_folder = os.path.join(current_path, 'LordGPT_folder')
 if not os.path.exists(working_folder):
