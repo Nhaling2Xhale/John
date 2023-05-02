@@ -2,7 +2,7 @@ botcommands = [
     {
         "command_string": "create_task_list",
         "command_argument": "```[CONTENT]```",
-        "command_description": "Used to create initial tasklist regenerate list with completed items. [CONTENT] must be the entire task list."
+        "command_description": "Used to create initial tasklist and regenerate tasks with completed items. ```[CONTENT]``` must be the entire task list."
     },
     {
         "command_string": "create_pdf_from_html",
@@ -12,7 +12,7 @@ botcommands = [
     {
         "command_string": "file_operations",
         "command_argument": "[FILENAME.ext]|```[CONTENT]```|[OPERATION]",
-        "command_description": "Used for the following file operations, write, read, append. For file rename and move operations, the [CONTENT] needs be the new name or destination path, respectively."
+        "command_description": "Used for the following file operations, write, read, append. For file rename and move operations, the ```[CONTENT]``` needs be the new name or destination path, respectively."
     },
     {
         "command_string": "search_engine",
