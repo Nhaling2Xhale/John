@@ -37,7 +37,7 @@ from prompt_toolkit import PromptSession
 from scripts.bot_prompts import *
 from scripts.bot_commands import *
 
-current_version = "1.9.6"
+current_version = "1.9.7"
 current_path = os.getcwd()
 working_folder = os.path.join(current_path, "LordGPT_folder")
 if not os.path.exists(working_folder):
@@ -124,7 +124,7 @@ success = False
 current_task = ""
 user_goal = ""
 self_prompt_action = ""
-message_command_self_prompt = ""
+self_prompt_action = ""
 command_string = ""
 command_argument = ""
 # endregion
@@ -560,12 +560,12 @@ def query_bot(messages, retries=api_retry):
                 responseparsed = response_json["choices"][0]["message"]["content"]
 
                 try:
-                    responseformatted = json.loads(responseparsed)
+                     responseformatted = json.loads(responseparsed)
 
                 except:
                     alternate_api(api_count)
 
-                    typing_print("LordGPT Responsed with invalid json, but we will fix on our end.")
+                    print("LordGPT Responsed with invalid json, but we will fix on our end.")
                     fixed_response = create_json_message(responseparsed)
                     responseformatted = json.loads(fixed_response)
 
@@ -578,17 +578,17 @@ def query_bot(messages, retries=api_retry):
                         self_prompt_action = responseformatted["self_prompt_action"]
 
                         if model == "gpt-4" or model == "gpt4":
-                            message_command_self_prompt = self_prompt_action
+                            self_prompt_action = self_prompt_action + message_command_self_prompt_gpt4
 
                         else:
-                            message_command_self_prompt = self_prompt_action
+                            self_prompt_action = self_prompt_action
 
                         return (
                             reasoning,
                             command_string,
                             command_argument,
                             current_task,
-                            message_command_self_prompt,
+                            self_prompt_action,
                         )
 
                     else:
@@ -675,7 +675,7 @@ def create_pdf_from_html(reasoning, command_string, command_argument, current_ta
                 command_string,
                 command_argument,
                 current_task,
-                message_command_self_prompt,
+                self_prompt_action,
             )
 
         # Set up PDFKit configuration (replace the path below with the path to your installed wkhtmltopdf)
@@ -693,7 +693,7 @@ def create_pdf_from_html(reasoning, command_string, command_argument, current_ta
             command_string,
             command_argument,
             current_task,
-            message_command_self_prompt,
+            self_prompt_action,
         )
 
     except Exception as e:
@@ -735,7 +735,7 @@ def run_shell_command(reasoning, command_string, command_argument, current_task,
             command_string,
             command_argument,
             current_task,
-            message_command_self_prompt,
+            self_prompt_action,
         )
 
     return_code = process.returncode
@@ -782,7 +782,7 @@ def run_shell_command(reasoning, command_string, command_argument, current_task,
         command_string,
         shell_response,
         current_task,
-        message_command_self_prompt,
+        self_prompt_action,
     )
 
 
@@ -804,7 +804,7 @@ def save_research(reasoning, command_string, command_argument, current_task, sel
             command_string,
             command_argument,
             current_task,
-            message_command_self_prompt,
+            self_prompt_action,
         )
 
     # Extract the title and content from the matched groups
@@ -832,7 +832,7 @@ def save_research(reasoning, command_string, command_argument, current_task, sel
             command_string,
             "Failed to save research, the file does not exist.",
             current_task,
-            message_command_self_prompt,
+            self_prompt_action,
         )
     reasoning = "Success: Researched saved successfully"
     return create_json_message(
@@ -840,7 +840,7 @@ def save_research(reasoning, command_string, command_argument, current_task, sel
         command_string,
         command_argument,
         current_task,
-        message_command_self_prompt,
+        self_prompt_action,
     )
 
 
@@ -865,7 +865,7 @@ def fetch_research(reasoning, command_string, command_argument, current_task, se
             command_string,
             command_argument,
             current_task,
-            message_command_self_prompt,
+            self_prompt_action,
         )
 
     return create_json_message(
@@ -873,7 +873,7 @@ def fetch_research(reasoning, command_string, command_argument, current_task, se
         command_string,
         cleaned_research,
         current_task,
-        message_command_self_prompt,
+        self_prompt_action,
     )
 
 
@@ -892,7 +892,7 @@ def create_task_list(reasoning, command_string, command_argument, current_task, 
         command_string,
         command_argument,
         current_task,
-        message_command_self_prompt,
+        self_prompt_action,
     )
 
 
@@ -910,7 +910,7 @@ def file_operations(reasoning, command_string, command_argument, current_task, s
                 command_string,
                 command_argument,
                 current_task,
-                message_command_self_prompt,
+                self_prompt_action,
             )
 
         file_name, content, operation = match.groups()
@@ -921,7 +921,7 @@ def file_operations(reasoning, command_string, command_argument, current_task, s
                 command_string,
                 command_argument,
                 current_task,
-                message_command_self_prompt,
+                self_prompt_action,
             )
 
         content = content.strip("```") if content else None
@@ -960,7 +960,7 @@ def file_operations(reasoning, command_string, command_argument, current_task, s
                     command_string,
                     command_argument,
                     current_task,
-                    message_command_self_prompt,
+                    self_prompt_action,
                 )
         except FileNotFoundError:
             reasoning = "Error: Folder does not exist. Please make sure the folder exists before performing file operations."
@@ -969,7 +969,7 @@ def file_operations(reasoning, command_string, command_argument, current_task, s
                 command_string,
                 command_argument,
                 current_task,
-                message_command_self_prompt,
+                self_prompt_action,
             )
 
         cleaned_result = clean_data(operation_result)
@@ -978,7 +978,7 @@ def file_operations(reasoning, command_string, command_argument, current_task, s
             command_string,
             command_argument,
             current_task,
-            message_command_self_prompt,
+            self_prompt_action,
         )
     except ValueError:
         reasoning = "Error: Every argument must contain this format: (filename |```content```| operation) The filename is the name of the file you want to operate on. The content needs to be formatted text or formatted code asa multiline string using triple backticks (```). For file rename and move operations, the content needs be the new name or destination path, respectively. The following file operations are valid: write, read, append, rename, move, delete. Read files to verify. "
@@ -987,7 +987,7 @@ def file_operations(reasoning, command_string, command_argument, current_task, s
             command_string,
             command_argument,
             current_task,
-            message_command_self_prompt,
+            self_prompt_action,
         )
 
 
@@ -1025,14 +1025,14 @@ if search_engine_mode == "GOOGLE":
                     command_string,
                     command_argument,
                     current_task,
-                    message_command_self_prompt,
+                    self_prompt_action,
                 )
 
             formatted_results = ""
             for result in results:
-                formatted_results += f"Google Image Search Results:"
-                formatted_results += f" Title: {result['title']}"
-                formatted_results += f" Link: {result['link']}"
+                formatted_results += f"Result: "
+                formatted_results += f" Page Title: {result['title']}"
+                formatted_results += f" Page Link: {result['link']}"
 
             searchresults = clean_data(formatted_results)
 
@@ -1044,7 +1044,7 @@ if search_engine_mode == "GOOGLE":
                 command_string,
                 command_argument,
                 current_task,
-                message_command_self_prompt,
+                self_prompt_action,
             )
         except Exception as e:
             set_global_success(False)
@@ -1054,7 +1054,7 @@ if search_engine_mode == "GOOGLE":
                 command_string,
                 command_argument,
                 current_task,
-                message_command_self_prompt,
+                self_prompt_action,
             )
 
 
@@ -1101,7 +1101,7 @@ elif search_engine_mode == "SERP":
             command_string,
             command_argument,
             current_task,
-            message_command_self_prompt,
+            self_prompt_action,
         )
 
 
@@ -1133,7 +1133,7 @@ def browse_website_url(reasoning, command_string, command_argument, current_task
             command_string,
             command_argument,
             current_task,
-            message_command_self_prompt,
+            self_prompt_action,
         )
 
     extracted_results = extract_text(result)
@@ -1151,7 +1151,7 @@ def browse_website_url(reasoning, command_string, command_argument, current_task
             command_string,
             command_argument,
             current_task,
-            message_command_self_prompt,
+            self_prompt_action,
         )
     reasoning = "Error: Website down or no results, choose a different URL"
     return create_json_message(
@@ -1159,7 +1159,7 @@ def browse_website_url(reasoning, command_string, command_argument, current_task
             command_string,
             command_argument,
             current_task,
-            message_command_self_prompt,
+            self_prompt_action,
         )
 
 # endregion
@@ -1229,7 +1229,7 @@ def command_handler(reasoning, command_string, command_argument, current_task, s
             command_string,
             command_argument,
             current_task,
-            message_command_self_prompt,
+            self_prompt_action,
         )
 
     function = globals().get(command_string)
@@ -1241,14 +1241,14 @@ def command_handler(reasoning, command_string, command_argument, current_task, s
             command_string,
             command_argument,
             current_task,
-            message_command_self_prompt,
+            self_prompt_action,
         )
     return function(
         reasoning,
         command_string,
         command_argument,
         current_task,
-        message_command_self_prompt,
+        self_prompt_action,
     )
 
 
@@ -1288,15 +1288,15 @@ def openai_bot_handler(current_prompt, message, role):
         self_prompt_action,
     ) = query_bot(messages)
 
-    print(colored("LordGPT Thoughts: ", color="yellow"), end="")
+    print(colored("LordGPT Thoughts:    ", color="yellow"), end="")
     typing_print(str(reasoning))
     print(colored("Current Task :       ", color="green"), end="")
     typing_print(str(current_task) + "")
-    print(colored("Next Action:        ", color="blue"), end="")
+    print(colored("Next Action:         ", color="blue"), end="")
     typing_print(str(self_prompt_action) + "")
-    print(colored("Executing:    ", color="red"), end="")
+    print(colored("Executing:           ", color="red"), end="")
     typing_print(str(command_string))
-    print(colored("Argument:     ", color="red"), end="")
+    print(colored("Argument:            ", color="red"), end="")
     typing_print(str(command_argument) + "\n\n")
 
     handler_response = command_handler(reasoning, command_string, command_argument, current_task, self_prompt_action)
@@ -1384,7 +1384,7 @@ def main_loop():
         new_goal = session.prompt("Enter a new goal (or type 'quit' to exit): ") or "Determine my location, gather the 5-day forecast for my location from the weather.gov website, and generate a professional-looking PDF with the 5-day forecast."
         if new_goal.lower() == "quit":
             exit
-
+            
         save_goal(new_goal)
         user_goal = new_goal
 

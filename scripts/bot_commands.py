@@ -22,7 +22,7 @@ botcommands = [
     {
         "command_string": "browse_website_url",
         "command_argument": "[URL]",
-        "command_description": "Browse a single url."
+        "command_description": "Browse a single non-interactive url."
     },
     {
         "command_string": "save_research",
