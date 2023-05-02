@@ -37,7 +37,7 @@ from prompt_toolkit import PromptSession
 from scripts.bot_prompts import *
 from scripts.bot_commands import *
 
-current_version = "1.9.3"
+current_version = "1.9.4"
 current_path = os.getcwd()
 working_folder = os.path.join(current_path, "LordGPT_folder")
 if not os.path.exists(working_folder):
