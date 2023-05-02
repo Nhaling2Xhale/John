@@ -37,7 +37,7 @@ from prompt_toolkit import PromptSession
 from scripts.bot_prompts import *
 from scripts.bot_commands import *
 
-current_version = "1.9.4"
+current_version = "1.9.5"
 current_path = os.getcwd()
 working_folder = os.path.join(current_path, "LordGPT_folder")
 if not os.path.exists(working_folder):
@@ -1355,6 +1355,7 @@ def main_loop():
                 current_task,
                 self_prompt_action,
             )
+            user_goal = clean_data(user_goal)
             bot_send = openai_bot_handler(bot_prompt + user_goal, json_string, "assistant")
         elif cycle_choice == "n" or user_goal == None:
             # Get new goal
@@ -1373,6 +1374,7 @@ def main_loop():
                 current_task,
                 self_prompt_action,
             )
+            user_goal = clean_data(user_goal)
             bot_send = openai_bot_handler(bot_prompt + user_goal, json_string, "assistant")
             typing_print(colored("Creating detailed plan to achieve the goal....", "green"))
 
