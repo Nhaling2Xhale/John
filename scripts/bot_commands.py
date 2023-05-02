@@ -7,7 +7,7 @@ botcommands = [
     {
         "command_string": "create_pdf_from_html",
         "command_argument": "[FILENAME.pdf]|[HTML-TEMPLATE.html]",
-        "command_description": "Used to generate and create PDF from a .html file. Name the file|specify the .html file"
+        "command_description": "Used to generate and create PDF from a .html file."
     },
     {
         "command_string": "file_operations",
