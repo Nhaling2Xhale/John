@@ -1,5 +1,5 @@
 from scripts.bot_commands import botcommands
-from LordGPT import current_task, user_goal
+from LordGPT import current_task, user_goal, self_prompt_action
 import platform
 os_name = platform.system()
 
