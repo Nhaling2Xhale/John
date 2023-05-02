@@ -1372,26 +1372,26 @@ def main_loop():
             )
             user_goal = clean_data(user_goal)
             bot_send = openai_bot_handler(bot_prompt + user_goal, json_string, "assistant")
-        elif cycle_choice == "n" or user_goal == None:
-            # Get new goal
-            new_goal = session.prompt("Enter a new goal (or type 'quit' to exit): ") or "Determine my location, gather the 5-day forecast for my location from the weather.gov website, and generate a professional-looking PDF with the 5-day forecast."
-            if new_goal.lower() == "quit":
-                exit
+    if user_goal == None or cycle_choice == "n":
+        # Get new goal
+        new_goal = session.prompt("Enter a new goal (or type 'quit' to exit): ") or "Determine my location, gather the 5-day forecast for my location from the weather.gov website, and generate a professional-looking PDF with the 5-day forecast."
+        if new_goal.lower() == "quit":
+            exit
 
-            save_goal(new_goal)
-            user_goal = new_goal
+        save_goal(new_goal)
+        user_goal = new_goal
 
-            typing_print(f"Current goal: {user_goal}")
-            json_string = create_json_message(
-                message_initial,
-                command_string,
-                command_argument,
-                current_task,
-                self_prompt_action,
-            )
-            user_goal = clean_data(user_goal)
-            bot_send = openai_bot_handler(bot_prompt + user_goal, json_string, "assistant")
-            typing_print(colored("Creating detailed plan to achieve the goal....", "green"))
+        typing_print(f"Current goal: {user_goal}")
+        json_string = create_json_message(
+            message_initial,
+            command_string,
+            command_argument,
+            current_task,
+            self_prompt_action,
+        )
+        user_goal = clean_data(user_goal)
+        bot_send = openai_bot_handler(bot_prompt + user_goal, json_string, "assistant")
+        typing_print(colored("Creating detailed plan to achieve the goal....", "green"))
 
     while True:
         num_input = session.prompt("Enter the amount of responses you want to process automatically (Default 1): ")
