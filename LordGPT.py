@@ -51,11 +51,12 @@ def typing_print(text, color=None):
 
     for char in text:
         print(colored(char, color=color) if color else char, end="", flush=True)
-        time.sleep(0.003)  # adjust delay time as desired
+        time.sleep(0.002)  # adjust delay time as desired
     print()  # move cursor to the next line after printing the text
 
 
 # endregion
+
 
 # region DEBUG CODE ###
 
@@ -644,6 +645,7 @@ def clean_data(content: str) -> str:
 
     # Remove all Unicode escape sequences
     data_str = re.sub(r"(\\u[0-9a-fA-F]{4})", " ", data_str)
+    data_str = re.sub(r"(\\\\u[0-9a-fA-F]{4})", " ", data_str)
 
     return data_str
 
