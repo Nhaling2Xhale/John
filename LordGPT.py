@@ -35,7 +35,7 @@ from playwright.sync_api import sync_playwright
 from scripts.bot_prompts import *
 from scripts.bot_commands import *
 
-current_version = "1.9"
+current_version = "1.9.1"
 current_path = os.getcwd()
 working_folder = os.path.join(current_path, 'LordGPT_folder')
 if not os.path.exists(working_folder):
@@ -566,7 +566,7 @@ def query_bot(messages, retries=api_retry):
                         if model == "gpt-4" or model == "gpt4":                        
                           
                             message_command_self_prompt = self_prompt_action + message_command_self_prompt_gpt4
-                            print(message_command_self_prompt)
+                            
                         else:                       
                   
                             message_command_self_prompt = self_prompt_action
@@ -576,7 +576,7 @@ def query_bot(messages, retries=api_retry):
                             command_string,
                             command_argument,
                             current_task,
-                            self_prompt_action,
+                            message_command_self_prompt,
                         )
 
                     else:
@@ -963,19 +963,19 @@ if search_engine_mode == "GOOGLE":
 
             formatted_results = ""
             for result in results:
-                formatted_results += f"Google Image Search Results:\n"
-                formatted_results += f"Title: {result['title']}"
-                formatted_results += f"Link: {result['link']}"
+                formatted_results += f"Google Image Search Results:"
+                formatted_results += f" Title: {result['title']}"
+                formatted_results += f" Link: {result['link']}"
 
             searchresults = json.dumps(
-                formatted_results.replace('\n', '').replace('\n', '').replace("'", ""))
+                formatted_results.replace('\n', '').replace('\n', '').replace("'", "").replace('"', ""))
 
             
             set_global_success(True)
             # GOOGLE IMAGE RESULTS RETURNED
-            reasoning = "Search Results: "
+            reasoning = "Search Results: " + searchresults
             return create_json_message(
-                reasoning + searchresults,  # type: ignore
+                reasoning,  # type: ignore
                 command_string,
                 command_argument,
                 current_task,
@@ -1014,8 +1014,10 @@ elif search_engine_mode == "SERP":
 
         for index, result in enumerate(results["organic_results"], start=1):
             if index <= loop_limit:
-                title = result['title'].replace('\n', '').replace('\n', '')
-                link = result['link'].replace('\n', '').replace('\n', '')
+                title = result['title'].replace('\n', '').replace(
+                    '\n', '').replace("'", "").replace('"', "")
+                link = result['link'].replace('\n', '').replace(
+                    '\n', '').replace("'", "").replace('"', "")
                 formatted_results.append(
                     {"index": index, "title": title, "link": link})
 
