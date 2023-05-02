@@ -1145,15 +1145,22 @@ def browse_website_url(reasoning, command_string, command_argument, current_task
     if max_characters is not None and len(browseresults) > max_characters:
         truncated_results = browseresults[:max_characters]
 
-    reasoning = "Website Content: "
+        reasoning = "Website Content: "
+        return create_json_message(
+            reasoning + truncated_results,  # type: ignore
+            command_string,
+            command_argument,
+            current_task,
+            message_command_self_prompt,
+        )
+    reasoning = "Error: Website down or no results, choose a different URL"
     return create_json_message(
-        reasoning + truncated_results,  # type: ignore
-        command_string,
-        command_argument,
-        current_task,
-        message_command_self_prompt,
-    )
-
+            reasoning,
+            command_string,
+            command_argument,
+            current_task,
+            message_command_self_prompt,
+        )
 
 # endregion
 
