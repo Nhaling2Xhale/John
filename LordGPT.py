@@ -562,7 +562,14 @@ def query_bot(messages, retries=api_retry):
                         command_argument = responseformatted["command_argument"]
                         current_task = responseformatted["current_task"]
                         self_prompt_action = responseformatted["self_prompt_action"]
+                        if model == "gpt-4" or model == "gpt4":                        
+                          
+                            message_command_self_prompt = message_command_self_prompt_gpt4
 
+                        else:                       
+                  
+                            message_command_self_prompt = message_command_self_prompt_gpt3
+                            
                         return (
                             reasoning,
                             command_string,
@@ -1244,13 +1251,11 @@ def main_loop():
     if model == "gpt-4" or model == "gpt4":
         bot_prompt = bot_prompt_gpt4
         message_initial = message_initial_gpt4
-        self_prompt_action = message_command_self_prompt_gpt4
 
 
     else:
         bot_prompt = bot_prompt_gpt3
         message_initial = message_initial_gpt3
-        self_prompt_action = message_command_self_prompt_gpt3
     
     #Clear Log files and old research
     research_file = os.path.join(working_folder, "research.txt")

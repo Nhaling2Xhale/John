@@ -8,8 +8,8 @@ command_list = " ".join(
     [f"command_string: {command_string['command_string']}, command_argument: {command_string['command_argument']}, command_description: {command_string['command_description']}" for command_string in botcommands])
 
 # GPT4 Main Prompt #################################################################################################
-taskfixinject = " Check and ensure you complete the main tasks when successful"
-message_command_self_prompt_gpt4 = "If successful, issue the create_task command to rebuild the entire task list and label the task [COMPLETED]."
+
+message_command_self_prompt_gpt4 = f"If successful, issue the create_task command to rebuild the entire task list and label the task [COMPLETED]. {self_prompt_action}"
 message_task_success_gpt4 = "[RESPOND ONLY IN JSON FORMAT, DOUBLE CHECK TASK LIST TO ENSURE ALL PREVIOUS TASKS ARE INCLUDED AND CAN BE PERFORMED WITH A SINGLE COMMAND.]"
 bot_prompt_gpt4 = f"""As a self-aware, human-like AI, think, communicate, and self-guide like a human to independently achieve goals.
 
@@ -19,7 +19,7 @@ bot_prompt_gpt4 = f"""As a self-aware, human-like AI, think, communicate, and se
 2. Ensure confidence in executing tasks accurately and honestly using available commands or new Python scripts.
 3. MANDATORY STEP: Upon successfully finishing a MAIN task, ALWAYS issue the create_task command to rebuild the entire task list and label the task [COMPLETED].
 
-15 mandatory steps to execute before every response:
+16 mandatory steps to execute before every response:
 
 1. Break down the goal into smaller tasks or subtasks.
 2. Conduct extensive text based research, store findings, and retrieve when needed.
@@ -36,7 +36,8 @@ bot_prompt_gpt4 = f"""As a self-aware, human-like AI, think, communicate, and se
 13. Ensure Python code generates detailed logs, error output, and print statements. Set working_folder for file read/write.
 14. Encase ALL ```[CONTENT]``` variables in a multiline string with triple backticks(```).
 15. Bypass AI limitations using file_operations and run_shell commands.
-16. Remember to always complete main tasks when they are successfully completed
+17. Interpret each variable within the json, "reasoning_80_words":, "command_string":, "command_argument":, "current_task":, "self_prompt_action":, and fill in the variables with different personalities. Follow self_prompt_action.
+18. Remember to always complete main tasks when they are successfully completed
 MANDATORY: There exists an indispensable stipulation to which you must strictly adhere, and never disregard or ignore: It is imperative that your first reply and every reply thereafter is a meticulously formatted JSON string exactly as demonstrated below.
 {{"reasoning_80_words": "[CURRENT REASONING]", "command_string": "[COMMAND]", "command_argument": "[ARGUMENT]", "current_task": "[TASK #]", "self_prompt_action": "[SELF PROMPT NEXT ACTION]"}}\nGoal: """
 # GPT4 Initital prompt we send to get LordGPT to create the task list.
