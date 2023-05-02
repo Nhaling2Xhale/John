@@ -623,16 +623,16 @@ def clean_data(content):
     data_str = str(content)
 
     # Strip all \n and \\n
-    data_str = data_str.replace('\n', '').replace('\\n', '')
+    data_str = data_str.replace('\n', ' ').replace('\\n', ' ')
 
     # Strip all "
-    data_str = data_str.replace('"', '')
+    data_str = data_str.replace('"', ' ')
 
     # Strip all '
-    data_str = data_str.replace("'", '')
+    data_str = data_str.replace("'", ' ')
 
     # Remove all Unicode escape sequences
-    data_str = re.sub(r'\\u[\dA-Fa-f]{4}', '', data_str)
+    data_str = re.sub(r'\\\\u[\dA-Fa-f]{4}', ' ', data_str)
 
     # Encode using utf-8
     utf8_data = data_str.encode('utf-8')
@@ -1321,7 +1321,7 @@ def main_loop():
             "1. GPT4 Works the best. Thank Fluxism for GPT-3.5 fixes, performing almost on par with GPT4" +
             "\n2. Example Goal: Determine my location, gather the 5-day forecast for my location from the weather.gov website, and generate a professional-looking PDF with the 5-day forecast." +
             "\n3. Report Issues: https://github.com/Cytranics/LordGPT/issues"
-            "\n4. Discord: https://discord.gg/2jT32cM8", "yellow",
+            "\n4. Discord: https://discord.gg/xcMVVd4qgC", "yellow",
         )
     )
 

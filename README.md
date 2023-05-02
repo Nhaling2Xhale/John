@@ -1,6 +1,6 @@
 # LordGPT
 Autonomous AI Assistant fully capable of performing tasks on its own.
-JOIN US ON DISCORD: https://discord.gg/mhGtn6fb
+JOIN US ON DISCORD: https://discord.gg/xcMVVd4qgC
 
 LordGPT is an automated AI Assistant that can accomplish a wide range of tasks.
 - Tracks his tasks to ensure completion.
