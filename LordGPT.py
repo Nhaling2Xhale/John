@@ -368,11 +368,11 @@ def create_json_message(
     self_prompt_action="",
 ):
     json_message = {
-        "reasoning_80_words": reasoning_80_words,
-        "command_string": command_string,
-        "command_argument": command_argument,
-        "current_task": current_task,
-        "self_prompt_action": self_prompt_action,
+        'reasoning_80_words': reasoning_80_words,
+        'command_string': command_string,
+        'command_argument': command_argument,
+        'current_task': current_task,
+        'self_prompt_action': self_prompt_action,
     }
 
     return json.dumps(json_message)
