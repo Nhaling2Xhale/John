@@ -14,6 +14,7 @@ import shutil
 import traceback
 import logging
 import inspect
+from collections import deque
 from time import sleep
 from typing import Dict
 
@@ -30,16 +31,28 @@ from serpapi import GoogleSearch
 import pdfkit
 import urllib.request
 from playwright.sync_api import sync_playwright
+from prompt_toolkit import PromptSession
 
 # Local file imports
 from scripts.bot_prompts import *
 from scripts.bot_commands import *
 
-current_version = "1.9.2"
+current_version = "1.9.3"
 current_path = os.getcwd()
 working_folder = os.path.join(current_path, 'LordGPT_folder')
 if not os.path.exists(working_folder):
     os.makedirs(working_folder)
+session = PromptSession()
+
+
+def typing_print(text, color=None):
+    if text is None or len(text.strip()) == 0:
+        return
+
+    for char in text:
+        print(colored(char, color=color) if color else char, end="", flush=True)
+        time.sleep(0.003)  # adjust delay time as desired
+    print()  # move cursor to the next line after printing the text
 # endregion
 
 #region DEBUG CODE ###
@@ -104,6 +117,7 @@ changelog_url = "https://thelordg.com/downloads/changelog.txt"
 download_link = "https://thelordg.com/downloads/LordGPT.exe"
 message_history = []
 global api_type
+success = False
 current_task = ""
 user_goal = ""
 self_prompt_action = ""
@@ -126,7 +140,7 @@ def check_for_updates():
         latest_version = update_response.text.strip()
 
         if latest_version != current_version:
-            print(colored(
+            typing_print(colored(
                 f"A new version ({latest_version}) is available! Please visit {download_link} to download the update. Github: https://github.com/Cytranics/LordGPT", "red"))
 
             # Fetch the changelog
@@ -135,44 +149,61 @@ def check_for_updates():
             changelog = changelog_response.text.strip()
 
             # Display the changelog
-            print(colored("Changelog:", "yellow"))
-            print(changelog)
+            typing_print(colored("Changelog:", "yellow"))
+            typing_print(changelog)
 
     except requests.exceptions.RequestException as e:
-        print("Error checking for updates:", e)
+        typing_print("Error checking for updates:", e)
 
 
 check_for_updates()
 
 
-@log_all_functions(logger)
+def save_goal(goal):
+    with open("goals.txt", "a") as f:
+        f.write(goal + "\n")
+
+
+def load_goals():
+    if os.path.exists("goals.txt"):
+        with open("goals.txt", "r") as f:
+            # Use a deque to keep only the last 10 lines (i.e., goals) of the file
+            goals_deque = deque(maxlen=10)
+            for line in f:
+                goals_deque.append(line.strip())
+            return list(goals_deque)
+    else:
+        return []
+
+@log_all_functions(logger, log_vars_callback=lambda: locals())
 def prompt_user_for_config():
-    api_key = input(
+    api_key = session.prompt(
         "OPENAI API key:https://platform.openai.com/account/api-keys - Come to our discord and message Cytranic to borrow a key:  "
     )
-    search_engine_choice = input(
+    search_engine_choice = session.prompt(
         "Which search engine do you want to use? (1: Google, 2: SERP): ")
 
     if search_engine_choice == "1":
-        google_api_key = input("Please enter your Google API key: ")
-        google_search_id = input("Please enter your Google Search ID: ")
+        google_api_key = session.prompt("Please enter your Google API key: ")
+        google_search_id = session.prompt(
+            "Please enter your Google Search ID: ")
         search_engine_mode = "GOOGLE"
         serp_api_key = None
 
     elif search_engine_choice == "2":
-        serp_api_key = input("Please enter your SERP API key: ")
+        serp_api_key = session.prompt("Please enter your SERP API key: ")
         search_engine_mode = "SERP"
         google_api_key = None
         google_search_id = None
     else:
-        print("Invalid choice. Please choose either '1' for Google or '2' for SERP.")
+        typing_print("Invalid choice. Please choose either '1' for Google or '2' for SERP.")
 
     model = ""
     while model not in ["gpt-3.5-turbo", "gpt-4"]:
-        print("Please select a model:")
-        print("1. GPT-3.5")
-        print("2. GPT-4")
-        model_choice = input(
+        typing_print("Please select a model:")
+        typing_print("1. GPT-3.5")
+        typing_print("2. GPT-4")
+        model_choice = session.prompt(
             "Choose the number of the model you have access to: ")
 
         if model_choice == "1":
@@ -180,9 +211,9 @@ def prompt_user_for_config():
         elif model_choice == "2":
             model = "gpt-4"
         else:
-            print("Invalid selection. Please enter 1 or 2.")
+            typing_print("Invalid selection. Please enter 1 or 2.")
 
-    debug_code = int(input(
+    debug_code = int(session.prompt(
         "Enable debug.txt in working folder? (1 for Enable, 2 for Disable): ")) == 1
 
     return {
@@ -225,12 +256,12 @@ config_file = "config.json"
 
 def load_variables(frozen):
     if frozen:
-        print("Frozen Detected")
+        typing_print("Frozen Detected")
         if os.path.exists(config_file):
             config_data = load_config_from_file(config_file)
         else:
             config_data = prompt_user_for_config()
-            print(
+            typing_print(
                 "Configuration saved to config.json, edit the file to change advanced settings")
 
             with open(config_file, 'w') as f:
@@ -285,7 +316,7 @@ google_search_id = get_variable(env_data, "CUSTOM_SEARCH_ENGINE_ID", None)
 api_count = 0
 
 
-@log_all_functions(logger)
+@log_all_functions(logger, log_vars_callback=lambda: locals())
 def alternate_api(number):
     global api_count
     global model
@@ -327,14 +358,7 @@ def alternate_api(number):
 # Typing effect function
 
 
-def typing_print(text, color=None):
-    if text is None or len(text.strip()) == 0:
-        return
 
-    for char in text:
-        print(colored(char, color=color) if color else char, end="", flush=True)
-        time.sleep(0.003)  # adjust delay time as desired
-    print()  # move cursor to the next line after printing the text
 
 
 def remove_brackets(text):
@@ -342,7 +366,7 @@ def remove_brackets(text):
 
 
 # Create JSON message function
-@log_all_functions(logger)
+@log_all_functions(logger, log_vars_callback=lambda: locals())
 def create_json_message(
     reasoning_80_words="",
     command_string="",
@@ -386,7 +410,7 @@ def get_random_text_and_color(text_color_dict):
 # region ### TEXT PARSER ###
 
 
-@log_all_functions(logger)
+@log_all_functions(logger, log_vars_callback=lambda: locals())
 def extract_text(html_content):
     soup = BeautifulSoup(html_content, 'html.parser')
 
@@ -408,28 +432,18 @@ def extract_text(html_content):
 
 # endregion
 
+
 # region ### API QUERY ###
 text_color_dict = {
-    "Questing with LordGPT............": "light_blue",
-    "Hello????........................": "light_blue",
-    "Restoring LordGPT save files.....": "light_blue",
-    "LordGPT speedrunning loading.....": "light_blue",
-    "Swapping LordGPT memory cards....": "light_blue",
-    "Hunting LordGPT's Easter eggs....": "light_blue",
-    "Entering LordGPT's cheat code....": "light_blue",
-    "Powering up with LordGPT.........": "light_blue",
-    "Recruiting LordGPT's party.......": "light_blue",
-    "Crafting gear in LordGPT's realm.": "light_blue",
-    "Racing LordGPT to the finish.....": "light_blue",
-    "Leveling up with LordGPT.........": "light_blue",
-    "Conquering LordGPT's leaderboard.": "light_blue",
-    "Achieving LordGPT high scores....": "light_blue",
-    "Exploring LordGPT's pixel world..": "light_blue",
-    "Unlocking LordGPT's hidden levels": "light_blue",
-    "Battling LordGPT's epic bosses...": "light_blue",
-    "Diving into LordGPT's pixel sea..": "light_blue",
-    "Linking with LordGPT's dimensions": "light_blue",
-    "Jamming to LordGPT's retro tunes.": "light_blue"
+    "Reticulating splines..................": "light_blue",
+    "I am Error............................": "light_blue",
+    "Preparing to loop like autoGPT........": "light_blue",
+    "The cake is a lie.....................": "yellow",
+    "It's dangerous to go alone! Take this.": "yellow",
+    "Would you kindly?.....................": "yellow",
+    "Do a barrel roll!.....................": "green",
+    "Finish him!...........................": "green",
+    "Hadouken!.............................": "green",
 }
 
 
@@ -491,7 +505,7 @@ def query_bot(messages, retries=api_retry):
 
                     except Exception as e:
                         if attempt < retries - 1:  # type: ignore
-                            print(f"Error occurred: {str(e)}...Retrying...")
+                            typing_print(f"Error occurred: {str(e)}...Retrying...")
 
                             time.sleep(2 ** attempt)
                 else:
@@ -504,7 +518,7 @@ def query_bot(messages, retries=api_retry):
                             response_json = botresponse.json()
                         except ReadTimeout as e:
                             if attempt < retries - 1:  # type: ignore
-                                print(
+                                typing_print(
                                     f"ReadTimeout Error occurred: {str(e)}...Retrying...")
                                 time.sleep(2 ** attempt)
                                 continue
@@ -517,7 +531,7 @@ def query_bot(messages, retries=api_retry):
                                     "I will pickup where I left off and continue with the first uncompleted task"
                                 )
                         except Exception as e:
-                            print(f"Error occurred: {str(e)}")
+                            typing_print(f"Error occurred: {str(e)}")
                             return (
                                 "Unknown API Error: Resend response in the correct json format",
                                 " ",
@@ -530,7 +544,7 @@ def query_bot(messages, retries=api_retry):
                 # Handling error response
                 if "error" in response_json:
                     error_message = response_json["error"]["message"]
-                    print(f"Error: {error_message}")
+                    typing_print(f"Error: {error_message}")
 
                     return (
                         f"API error {error_message}",
@@ -550,7 +564,7 @@ def query_bot(messages, retries=api_retry):
                 except:
                     alternate_api(api_count)
                     
-                    print("LordGPT Responsed with invalid json, but we will fix on our end.")
+                    typing_print("LordGPT Responsed with invalid json, but we will fix on our end.")
                     fixed_response = create_json_message(responseparsed)       
                     responseformatted = json.loads(fixed_response)
 
@@ -591,12 +605,12 @@ def query_bot(messages, retries=api_retry):
 
             except Exception as e:
                 if attempt < retries - 1:  # type: ignore
-                    print(
+                    typing_print(
                         f"API Timeout, increase your timeout: {str(e)}...Retrying...")
 
                     time.sleep(2**attempt)
                 else:
-                    print("API Retries reached, insert another coin and try again...")
+                    typing_print("API Retries reached, insert another coin and try again...")
                     exit
 
 
@@ -604,9 +618,32 @@ def query_bot(messages, retries=api_retry):
 
 # region ### COMMANDS ###
 
+def clean_data(content):
+    # Convert data to string representation
+    data_str = str(content)
+
+    # Strip all \n and \\n
+    data_str = data_str.replace('\n', '').replace('\\n', '')
+
+    # Strip all "
+    data_str = data_str.replace('"', '')
+
+    # Strip all '
+    data_str = data_str.replace("'", '')
+
+    # Remove all Unicode escape sequences
+    data_str = re.sub(r'\\u[\dA-Fa-f]{4}', '', data_str)
+
+    # Encode using utf-8
+    utf8_data = data_str.encode('utf-8')
+
+    # Return as a string
+    return utf8_data.decode('utf-8')
+
+
 # region ### GENERATE PDF ###
 
-@log_all_functions(logger)
+@log_all_functions(logger, log_vars_callback=lambda: locals())
 def create_pdf_from_html(reasoning, command_string, command_argument, current_task, self_prompt_action):
     try:
         # Split the command_argument based on the pipe symbol
@@ -664,7 +701,7 @@ def create_pdf_from_html(reasoning, command_string, command_argument, current_ta
 # endregion
 
 # region ### SHELL COMMANDS ###
-@log_all_functions(logger)
+@log_all_functions(logger, log_vars_callback=lambda: locals())
 def run_shell_command(
     reasoning, command_string, command_argument, current_task, self_prompt_action
 ):
@@ -678,7 +715,7 @@ def run_shell_command(
 
     try:
         # Set a timeout value (in seconds) for the command execution
-        print("Attempting Shell Command, Timeout is 10 Minutes...")
+        typing_print("Attempting Shell Command, Timeout is 10 Minutes...")
         timeout_value = 120
         output, error = process.communicate(timeout=timeout_value)
     except subprocess.TimeoutExpired:
@@ -739,13 +776,14 @@ def run_shell_command(
                 :max_characters
             ]
 
-    print("Shell Command Output: " + shell_response)
+    typing_print("Shell Command Output: " + shell_response)
     shell_cleaned = json.dumps(shell_response)
+    shell_response = clean_data(shell_cleaned)
     reasoning = "Check the output to determine success"
     return create_json_message(
         reasoning,
         command_string,
-        shell_cleaned,
+        shell_response,
         current_task,
         message_command_self_prompt,
 
@@ -757,7 +795,7 @@ def run_shell_command(
 
 # region ### SAVE RESEARCH ###
 
-@log_all_functions(logger)
+@log_all_functions(logger, log_vars_callback=lambda: locals())
 def save_research(reasoning, command_string, command_argument, current_task, self_prompt_action):
     # Match the command_argument with the provided regex pattern
     match = re.match(
@@ -818,14 +856,15 @@ def save_research(reasoning, command_string, command_argument, current_task, sel
 # region ### FETCH RESEARCH ###
 
 
-@log_all_functions(logger)
+@log_all_functions(logger, log_vars_callback=lambda: locals())
 def fetch_research(reasoning, command_string, command_argument, current_task, self_prompt_action):
     # Fetch the research.txt file from the working_folder
     research_file_path = os.path.join(working_folder, "research.txt")
 
     try:
-        with open(research_file_path, "r") as f:
+        with open(research_file_path, "r", encoding="utf-8") as f:
             formatted_research = f.read()
+            cleaned_research = clean_data(formatted_research)
     except FileNotFoundError:
         reasoning = "Failed to fetch research data, the file doesn't exist. You must save research before you can fetch it."
         return create_json_message(
@@ -839,7 +878,7 @@ def fetch_research(reasoning, command_string, command_argument, current_task, se
     return create_json_message(
         reasoning,
         command_string,
-        formatted_research,
+        cleaned_research,
         current_task,
         message_command_self_prompt,
     )
@@ -849,7 +888,7 @@ def fetch_research(reasoning, command_string, command_argument, current_task, se
 # W Writes the task list to bots 2nd message so he always remembers
 
 
-@log_all_functions(logger)
+@log_all_functions(logger, log_vars_callback=lambda: locals())
 def create_task_list(
     reasoning, command_string, command_argument, current_task, self_prompt_action
 ):
@@ -868,7 +907,7 @@ def create_task_list(
 # endregion
 
 # region ### FILE OPERATION ###
-@log_all_functions(logger)
+@log_all_functions(logger, log_vars_callback=lambda: locals())
 def file_operations(reasoning, command_string, command_argument, current_task, self_prompt_action):
     try:
         match = re.match(
@@ -918,8 +957,8 @@ def file_operations(reasoning, command_string, command_argument, current_task, s
             reasoning = "Error: Folder does not exist. Please make sure the folder exists before performing file operations."
             return create_json_message(reasoning, command_string, command_argument, current_task, message_command_self_prompt)
 
-        
-        return create_json_message(operation_result, command_string, command_argument, current_task, message_command_self_prompt)
+        cleaned_result = clean_data(operation_result)
+        return create_json_message(cleaned_result, command_string, command_argument, current_task, message_command_self_prompt)
     except ValueError:
         reasoning = "Error: Every argument must contain this format: (filename |```content```| operation) The filename is the name of the file you want to operate on. The content needs to be formatted text or formatted code asa multiline string using triple backticks (```). For file rename and move operations, the content needs be the new name or destination path, respectively. The following file operations are valid: write, read, append, rename, move, delete. Read files to verify. "
         return create_json_message(reasoning, command_string, command_argument, current_task, message_command_self_prompt)
@@ -929,7 +968,7 @@ def file_operations(reasoning, command_string, command_argument, current_task, s
 # GOOGLE API
 
 if search_engine_mode == "GOOGLE":
-    @log_all_functions(logger)
+    @log_all_functions(logger, log_vars_callback=lambda: locals())
     def search_engine(
         reasoning, command_string, command_argument, current_task, self_prompt_action
     ):
@@ -968,8 +1007,7 @@ if search_engine_mode == "GOOGLE":
                 formatted_results += f" Title: {result['title']}"
                 formatted_results += f" Link: {result['link']}"
 
-            searchresults = json.dumps(
-                formatted_results.replace('\n', '').replace('\n', '').replace("'", "").replace('"', ""))
+            searchresults = clean_data(formatted_results)
 
             
             set_global_success(True)
@@ -996,7 +1034,7 @@ if search_engine_mode == "GOOGLE":
 
 # SERP API
 elif search_engine_mode == "SERP":
-    @log_all_functions(logger)
+    @log_all_functions(logger, log_vars_callback=lambda: locals())
     def search_engine(reasoning, command_string, command_argument, current_task, self_prompt_action):
         params = {
             "api_key": serp_api_key,
@@ -1032,10 +1070,10 @@ elif search_engine_mode == "SERP":
                 "Retry or choose another search term."
             )
 
-        sanitized_results = json.dumps(formatted_results)
+        searchresults = clean_data(formatted_results)
         reasoning = "Search Results: "
         return create_json_message(
-            reasoning + sanitized_results,
+            reasoning + searchresults,
             command_string,
             command_argument,
             current_task,
@@ -1046,9 +1084,9 @@ elif search_engine_mode == "SERP":
 # endregion
 
 # region ### BROWSE WEBSITE ###
-@log_all_functions(logger)
+@log_all_functions(logger, log_vars_callback=lambda: locals())
 def browse_website_url(reasoning, command_string, command_argument, current_task, self_prompt_action):
-    @log_all_functions(logger)
+    @log_all_functions(logger, log_vars_callback=lambda: locals())
     def run(playwright):
         browser = playwright.chromium.launch()
         context = browser.new_context(java_script_enabled=False)
@@ -1073,21 +1111,18 @@ def browse_website_url(reasoning, command_string, command_argument, current_task
             message_command_self_prompt,
         )
 
-    extracted_text = extract_text(result)
-
+    extracted_results = extract_text(result)
+    browseresults = clean_data(extracted_results)
     # Keep only A-Z, a-z, and spaces
     #extracted_text = re.sub(r'[^A-Za-z\s]', '', extracted_text)
 
-    # Initialize sanitized_text to extracted_text
-    sanitized_text = json.dumps(extracted_text)
-
     # type: ignore
-    if max_characters is not None and len(extracted_text) > max_characters:
-        sanitized_text = extracted_text[:max_characters]
+    if max_characters is not None and len(browseresults) > max_characters:
+        truncated_results = browseresults[:max_characters]
 
     reasoning = "Website Content: "
     return create_json_message(
-        reasoning + sanitized_text,  # type: ignore
+        reasoning + truncated_results,  # type: ignore
         command_string,
         command_argument,
         current_task,
@@ -1098,12 +1133,12 @@ def browse_website_url(reasoning, command_string, command_argument, current_task
 # endregion
 
 # region ### MISSION ACCOMPLISHED ###
-@log_all_functions(logger)
+@log_all_functions(logger, log_vars_callback=lambda: locals())
 def mission_accomplished(
     reasoning, command_string, command_argument, current_task, self_prompt_action
 ):
     set_global_success(True)
-    print("Mission accomplished:", command_argument)
+    typing_print("Mission accomplished:", command_argument)
     sys.exit()
 
 
@@ -1112,9 +1147,9 @@ def mission_accomplished(
 
 # region ### MESSAGE HANDLER ###
 
-@log_all_functions(logger)
+@log_all_functions(logger, log_vars_callback=lambda: locals())
 def message_handler(current_prompt, message, role):
-    @log_all_functions(logger)
+    @log_all_functions(logger, log_vars_callback=lambda: locals())
     def update_message_history(role, content):
         try:
             message_history.append({"role": role, "content": content})
@@ -1125,11 +1160,11 @@ def message_handler(current_prompt, message, role):
                     "content": "Command did not return anything, let admin know",
                 }
             )
-            print(
+            typing_print(
                 f"Error occurred while appending message: Check logs, message set to None {e}"
             )
 
-    @log_all_functions(logger)
+    @log_all_functions(logger, log_vars_callback=lambda: locals())
     def limit_message_history():
         while len(message_history) > max_conversation + 1:  # type: ignore
             message_history.pop(2)
@@ -1157,7 +1192,7 @@ def message_handler(current_prompt, message, role):
 
 # region ### COMMAND HANDLER ###
 
-@log_all_functions(logger)
+@log_all_functions(logger, log_vars_callback=lambda: locals())
 def command_handler(
     reasoning, command_string, command_argument, current_task, self_prompt_action
 ):
@@ -1215,7 +1250,7 @@ def bbs_ascii_lordgpt():
 # endregion
 
 
-@log_all_functions(logger)
+@log_all_functions(logger, log_vars_callback=lambda: locals())
 def openai_bot_handler(current_prompt, message, role):
 
     messages = message_handler(current_prompt, message, role)
@@ -1224,13 +1259,13 @@ def openai_bot_handler(current_prompt, message, role):
 
     print(colored("LordGPT Thoughts: ", color="yellow"), end="")
     typing_print(str(reasoning))
-    print(colored("Currently :       ", color="green"), end="")
+    print(colored("Current Task :       ", color="green"), end="")
     typing_print(str(current_task) + "")
     print(colored("Next Action:        ", color="blue"), end="")
     typing_print(str(self_prompt_action) + "")
-    print(colored("Executing CMD:    ", color="red"), end="")
+    print(colored("Executing:    ", color="red"), end="")
     typing_print(str(command_string))
-    print(colored("CMD Argument:     ", color="red"), end="")
+    print(colored("Argument:     ", color="red"), end="")
     typing_print(str(command_argument) + "\n\n")
     
     
@@ -1248,7 +1283,7 @@ def openai_bot_handler(current_prompt, message, role):
 # Set the prompt based on the model.
 
 
-@log_all_functions(logger)
+@log_all_functions(logger, log_vars_callback=lambda: locals())
 def main_loop():
     alternate_api(api_count)
     
@@ -1278,10 +1313,10 @@ def main_loop():
     
     if os.path.exists(debug_log_file):
         os.remove(debug_log_file) 
+    
+    typing_print(colored("Tips: ", "green"))
 
-    print(colored("Tips: ", "green"))
-
-    print(
+    typing_print(
         colored(
             "1. GPT4 Works the best. Thank Fluxism for GPT-3.5 fixes, performing almost on par with GPT4" +
             "\n2. Example Goal: Determine my location, gather the 5-day forecast for my location from the weather.gov website, and generate a professional-looking PDF with the 5-day forecast." +
@@ -1290,25 +1325,53 @@ def main_loop():
         )
     )
 
-    user_goal = input("Goal: ")
-    print(colored("Creating detailed plan to achieve the goal....", "green"))
-    if not user_goal:
-        user_goal = "Determine my city and state, then gather and save the 5-day forecast for my location from the weather.gov website, finally generate a professional-looking PDF with the 5-day forecast."
-        print(colored("Goal: " + user_goal, "green"))
+
+        # Load goals from the file
+    goals = load_goals()
+
+    if goals:
+        typing_print("Previous goals:")
+        for idx, goal in enumerate(goals, start=1):
+            typing_print(colored(f"{idx}. {goal}", color="light_green"))
+
+        cycle_choice = session.prompt(
+            "Do you want to load a previous goal? (y/n): ").lower()
+        if cycle_choice == "y":
+            goal_idx = int(session.prompt(
+                f"Enter the goal number (1-{len(goals)}): ")) - 1
+            user_goal = goals[goal_idx]
+            typing_print(f"Selected goal: {user_goal}")            
+            typing_print(colored("Goal: " + user_goal, "green"))
+        else:
+            # Get new goal
+            new_goal = session.prompt(
+                "Enter a new goal (or type 'quit' to exit): ")
+            if new_goal.lower() == "quit":
+                exit
+
+            save_goal(new_goal)
+            user_goal = new_goal
+            typing_print(f"Current goal: {user_goal}")
+
+            typing_print(
+                colored("Creating detailed plan to achieve the goal....", "green"))
+            if not user_goal:
+                user_goal = "Determine my city and state, then gather and save the 5-day forecast for my location from the weather.gov website, finally generate a professional-looking PDF with the 5-day forecast."
+                typing_print(colored("Goal: " + user_goal, "green"))
+            
     set_global_success(True)
     alternate_api(api_count)
     bot_send = openai_bot_handler(
         bot_prompt + user_goal, message_initial, "assistant")
-
     while True:
-        num_input = input(
+        num_input = session.prompt(
             "Enter the amount of responses you want to process automatically (Default 1): "
         )
         try:
             num_iterations = int(num_input) if num_input.strip() else 1
         except ValueError:
 
-            print("Invalid input. Using default value of 1.")
+            typing_print("Invalid input. Using default value of 1.")
             num_iterations = 1
 
         for _ in range(num_iterations):
@@ -1316,10 +1379,10 @@ def main_loop():
             bot_send = openai_bot_handler(bot_prompt, loop, "assistant")
             loop = bot_send
 
-        continue_choice = input(
+        continue_choice = session.prompt(
             "Is LordG on the right track If not, select n? (y/n): ").lower()
         if continue_choice == "n":
-            new_direction = input("Correct LordGPT: ")
+            new_direction = session.prompt("Correct LordGPT: ")
             openai_bot_handler(
                 bot_prompt, f"""{new_direction}""", "user")
             break

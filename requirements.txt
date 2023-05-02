@@ -13,3 +13,4 @@ yaspin
 playwright
 google-search-results
 wkhtmltopdf
+prompt_toolkit
