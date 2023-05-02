@@ -959,7 +959,7 @@ if search_engine_mode == "GOOGLE":
                 formatted_results += f"Link: {result['link']}"
 
             searchresults = json.dumps(
-                formatted_results.replace('\n', '').replace('\\n', ''))
+                formatted_results.replace('\n', '').replace('\n', '').replace("'", ""))
 
             
             set_global_success(True)

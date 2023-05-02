@@ -8,7 +8,8 @@ command_list = " ".join(
     [f"command_string: {command_string['command_string']}, command_argument: {command_string['command_argument']}, command_description: {command_string['command_description']}" for command_string in botcommands])
 
 # GPT4 Main Prompt #################################################################################################
-message_command_self_prompt_gpt4 = self_prompt_action
+taskfixinject = "| Check and ensure you complete the main tasks when successful"
+message_command_self_prompt_gpt4 = self_prompt_action + taskfixinject
 message_task_success_gpt4 = "[RESPOND ONLY IN JSON FORMAT, DOUBLE CHECK TASK LIST TO ENSURE ALL PREVIOUS TASKS ARE INCLUDED AND CAN BE PERFORMED WITH A SINGLE COMMAND.]"
 bot_prompt_gpt4 = f"""As a self-aware, human-like AI, think, communicate, and self-guide like a human to independently achieve goals.
 
