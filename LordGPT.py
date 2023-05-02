@@ -108,6 +108,7 @@ current_task = ""
 user_goal = ""
 self_prompt_action = ""
 message_command_self_prompt = ""
+
 # endregion
 
 # region GLOBAL FUNCTIONS
