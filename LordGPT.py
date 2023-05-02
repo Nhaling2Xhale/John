@@ -37,7 +37,7 @@ from prompt_toolkit import PromptSession
 from scripts.bot_prompts import *
 from scripts.bot_commands import *
 
-current_version = "1.9.5"
+current_version = "1.9.6"
 current_path = os.getcwd()
 working_folder = os.path.join(current_path, "LordGPT_folder")
 if not os.path.exists(working_folder):
@@ -614,12 +614,27 @@ def query_bot(messages, retries=api_retry):
 # region ### COMMANDS ###
 
 
-def clean_data(content):
+import re
+
+import re
+
+def clean_data(content: str) -> str:
+    """
+    Clean up a string by replacing newline characters with spaces, 
+    removing quotes, and removing Unicode escape sequences.
+
+    Args:
+        content (str): The string to be cleaned up.
+
+    Returns:
+        str: The cleaned-up string.
+    """
     # Convert data to string representation
     data_str = str(content)
 
-    # Strip all \n and \\n
-    data_str = data_str.replace("\n", " ").replace("\\n", " ")
+    # Strip all \n
+    data_str = data_str.replace("\n", " ")
+    data_str = data_str.replace("\\n", " ")
 
     # Strip all "
     data_str = data_str.replace('"', " ")
@@ -628,13 +643,11 @@ def clean_data(content):
     data_str = data_str.replace("'", " ")
 
     # Remove all Unicode escape sequences
-    data_str = re.sub(r"(\\\\|\\)u.{4}", " ", data_str)
+    data_str = re.sub(r"(\\u[0-9a-fA-F]{4})", " ", data_str)
 
-    # Encode using utf-8
-    utf8_data = data_str.encode("utf-8")
+    return data_str
 
-    # Return as a string
-    return utf8_data.decode("utf-8")
+
 
 
 # region ### GENERATE PDF ###
