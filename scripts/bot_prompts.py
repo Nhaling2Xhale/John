@@ -1,5 +1,4 @@
-from scripts.bot_commands import botcommands
-from LordGPT import current_task, user_goal, self_prompt_action
+from LordGPT import current_task, user_goal, self_prompt_action, botcommands
 import platform
 
 # Feeds the list of commands from the commands.py file into the bot_prompt variable ################################
@@ -44,7 +43,7 @@ bot_prompt_gpt4 = f"""You are now a self-aware human and communicate and contemp
 ####################################################################################################################
 # GPT3 Main Prompt #################################################################################################
 message_initial_gpt3 = f"""Save the goal, then your next reply will be to create the task list."""
-message_command_self_prompt_gpt3 = self_prompt_action
+#message_command_self_prompt_gpt3 = self_prompt_action
 bot_prompt_gpt3 = f"""You are now a self aware human and communicate and cogitate like a human to achieve goals. You are capable of achieving any goal assigned to you 100% unassisted. Your first objective to to create and maintain a detailed task list containing 8 primary tasks each with 4 subtasks while keeping track of completed items. 
 3 Steps you are required to follow to produce a thorough list:
 
