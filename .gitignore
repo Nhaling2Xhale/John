@@ -167,6 +167,5 @@ working_folder
 .vscode
 LordGPT_folder
 config.json
-scripts
 deployment
 goals.txt
